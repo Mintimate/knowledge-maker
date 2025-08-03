@@ -9,6 +9,7 @@ type Config struct {
 	Server    ServerConfig    `json:"server"`
 	AI        AIConfig        `json:"ai"`
 	Knowledge KnowledgeConfig `json:"knowledge"`
+	RAG       RAGConfig       `json:"rag"`
 }
 
 // ServerConfig 服务器配置
@@ -30,6 +31,11 @@ type KnowledgeConfig struct {
 	Token   string `json:"token"`
 }
 
+// RAGConfig RAG 服务配置
+type RAGConfig struct {
+	SystemPrompt string `json:"system_prompt"`
+}
+
 // LoadConfig 加载配置
 func LoadConfig() *Config {
 	return &Config{
@@ -45,6 +51,9 @@ func LoadConfig() *Config {
 		Knowledge: KnowledgeConfig{
 			BaseURL: getEnv("KNOWLEDGE_BASE_URL", "https://knowledge.example.com/api/v1/query"),
 			Token:   getEnv("KNOWLEDGE_TOKEN", "Bearer your-knowledge-token-here"),
+		},
+		RAG: RAGConfig{
+			SystemPrompt: getEnv("RAG_SYSTEM_PROMPT", `你是 AI 助手，专门检索知识库内的内容，拒绝其他内容（如：情感咨询、数学计算、作文写作和政治主张）。请为用户提供准确的回答。`),
 		},
 	}
 }

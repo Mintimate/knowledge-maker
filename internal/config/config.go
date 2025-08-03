@@ -13,6 +13,7 @@ type Config struct {
 	Server    ServerConfig    `yaml:"server"`
 	AI        AIConfig        `yaml:"ai"`
 	Knowledge KnowledgeConfig `yaml:"knowledge"`
+	RAG       RAGConfig       `yaml:"rag"`
 }
 
 // ServerConfig 服务器配置
@@ -32,6 +33,11 @@ type AIConfig struct {
 type KnowledgeConfig struct {
 	BaseURL string `yaml:"base_url"`
 	Token   string `yaml:"token"`
+}
+
+// RAGConfig RAG 服务配置
+type RAGConfig struct {
+	SystemPrompt string `yaml:"system_prompt"`
 }
 
 // LoadConfig 加载配置
@@ -107,6 +113,11 @@ func overrideWithEnv(config *Config) {
 	}
 	if token := os.Getenv("KNOWLEDGE_TOKEN"); token != "" {
 		config.Knowledge.Token = token
+	}
+
+	// RAG 配置
+	if systemPrompt := os.Getenv("RAG_SYSTEM_PROMPT"); systemPrompt != "" {
+		config.RAG.SystemPrompt = systemPrompt
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"knowledge-maker/internal/config"
 	"knowledge-maker/internal/model"
 )
 
@@ -11,13 +12,15 @@ import (
 type RAGService struct {
 	knowledgeService *KnowledgeService
 	aiService        *AIService
+	config           *config.Config
 }
 
 // NewRAGService 创建 RAG 服务实例
-func NewRAGService(knowledgeService *KnowledgeService, aiService *AIService) *RAGService {
+func NewRAGService(knowledgeService *KnowledgeService, aiService *AIService, cfg *config.Config) *RAGService {
 	return &RAGService{
 		knowledgeService: knowledgeService,
 		aiService:        aiService,
+		config:           cfg,
 	}
 }
 
@@ -94,14 +97,5 @@ func (rs *RAGService) ProcessStreamChat(query string) (chan string, chan error, 
 
 // getSystemPrompt 获取系统提示词
 func (rs *RAGService) getSystemPrompt() string {
-	return `你是 AI 助手，专门检索 Rime 和薄荷输入法有关内容，拒绝其他内容（如：情感咨询、数学计算、作文写作和政治主张）。
-
-请严格遵循以下规则：
-1. 只回答与 Rime 输入法框架和薄荷输入法相关的技术问题
-2. 对于非相关问题，礼貌拒绝并说明只能回答 Rime 和薄荷输入法相关问题
-3. 基于提供的知识库内容进行回答，确保信息准确
-4. 使用简体中文回答
-5. 内容应包含适当的标题、段落、列表等标签来提升可读性
-
-请为用户提供准确的回答。`
+	return rs.config.RAG.SystemPrompt
 }

@@ -41,7 +41,7 @@ func main() {
 	// 初始化服务
 	knowledgeService := service.NewKnowledgeService(cfg)
 	aiService := service.NewAIService(cfg)
-	ragService := service.NewRAGService(knowledgeService, aiService)
+	ragService := service.NewRAGService(knowledgeService, aiService, cfg)
 
 	// 初始化处理器
 	ragHandler := handler.NewRAGHandler(ragService)

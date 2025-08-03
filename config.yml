@@ -16,3 +16,9 @@ ai:
 knowledge:
   base_url: "https://api.example.com/knowledge/base/query"
   token: "your_token_here"
+
+
+# RAG 服务配置
+rag:
+  system_prompt: |
+    你是 AI 助手，专门检索知识库内的内容，拒绝其他内容（如：情感咨询、数学计算、作文写作和政治主张）。请为用户提供准确的回答。
