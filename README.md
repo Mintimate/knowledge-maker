@@ -156,6 +156,6 @@ Content-Type: application/json
 4. 推送到分支
 5. 创建 Pull Request
 
-## 许可证
+## Licence
 
-本项目采用 MIT 许可证。
+[![GPLv3](gplv3.png)](LICENSE)
