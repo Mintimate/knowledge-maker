@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景圆形 -->
+  <circle cx="16" cy="16" r="15" fill="url(#grad)" stroke="#fff" stroke-width="1"/>
+  
+  <!-- 知识库图标 - 书本 -->
+  <rect x="9" y="8" width="14" height="16" rx="1" fill="#fff" opacity="0.9"/>
+  <rect x="10" y="9" width="12" height="14" rx="0.5" fill="none" stroke="#4F46E5" stroke-width="0.8"/>
+  
+  <!-- 书页线条 -->
+  <line x1="12" y1="12" x2="20" y2="12" stroke="#4F46E5" stroke-width="0.6"/>
+  <line x1="12" y1="14" x2="18" y2="14" stroke="#4F46E5" stroke-width="0.6"/>
+  <line x1="12" y1="16" x2="19" y2="16" stroke="#4F46E5" stroke-width="0.6"/>
+  <line x1="12" y1="18" x2="17" y2="18" stroke="#4F46E5" stroke-width="0.6"/>
+  
+  <!-- AI 标识 - 小圆点 -->
+  <circle cx="21" cy="10" r="2" fill="#10B981"/>
+  <text x="21" y="11.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="2.5" font-weight="bold" fill="#fff">AI</text>
+</svg>
