@@ -31,7 +31,7 @@ WORKDIR /app
 # 从构建阶段复制二进制文件
 COPY --from=builder /app/knowledge-maker .
 COPY config.yml .
-COPY static .
+COPY static ./static/
 
 # 暴露端口
 EXPOSE 8082
