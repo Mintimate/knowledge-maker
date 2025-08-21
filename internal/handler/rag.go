@@ -75,23 +75,76 @@ func (h *RAGHandler) HandleStreamChat(c *gin.Context) {
 		return
 	}
 
+	// 跟踪思考和回答状态
+	var isThinking bool
+	var hasThinking bool
+
 	// 发送流式数据
 	for {
 		select {
-		case content, ok := <-responseChan:
+		case streamContent, ok := <-responseChan:
 			if !ok {
-				// 流结束
+				// 流结束，如果有思考内容需要关闭标签
+				if hasThinking && isThinking {
+					c.SSEvent("data", gin.H{
+						"content": "</think>",
+					})
+					c.Writer.Flush()
+				}
+				if hasThinking {
+					c.SSEvent("data", gin.H{
+						"content": "</answer>",
+					})
+					c.Writer.Flush()
+				}
 				c.SSEvent("done", gin.H{
 					"success": true,
 					"message": "回答完成",
 				})
 				return
 			}
-			// 发送内容片段
-			c.SSEvent("data", gin.H{
-				"content": content,
-			})
-			c.Writer.Flush()
+
+			// 检查是否包含思考内容
+			if streamContent.ReasoningContent != "" {
+				if !hasThinking {
+					// 第一次遇到思考内容，开始思考标签
+					hasThinking = true
+					isThinking = true
+					c.SSEvent("data", gin.H{
+						"content": "<think>",
+					})
+					c.Writer.Flush()
+				}
+				// 发送思考内容
+				c.SSEvent("data", gin.H{
+					"content": streamContent.ReasoningContent,
+				})
+				c.Writer.Flush()
+			}
+
+			// 检查是否有回答内容
+			if streamContent.Content != "" {
+				if hasThinking && isThinking {
+					// 结束思考，开始回答
+					isThinking = false
+					c.SSEvent("data", gin.H{
+						"content": "</think><answer>",
+					})
+					c.Writer.Flush()
+				} else if !hasThinking {
+					// 没有思考内容，允许空的思考标签
+					hasThinking = true
+					c.SSEvent("data", gin.H{
+						"content": "<think></think><answer>",
+					})
+					c.Writer.Flush()
+				}
+				// 发送回答内容
+				c.SSEvent("data", gin.H{
+					"content": streamContent.Content,
+				})
+				c.Writer.Flush()
+			}
 
 		case err := <-errorChan:
 			if err != nil {

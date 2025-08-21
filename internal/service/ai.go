@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 
 	"knowledge-maker/internal/config"
+	"knowledge-maker/internal/model"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -115,7 +117,7 @@ func (ai *AIService) GenerateStreamResponse(systemPrompt, userQuery, knowledgeCo
 }
 
 // ProcessStreamResponse 处理流式响应并通过通道发送
-func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, responseChan chan<- string, errorChan chan<- error) {
+func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, responseChan chan<- model.StreamContent, errorChan chan<- error) {
 	defer close(responseChan)
 	defer close(errorChan)
 	defer stream.Close()
@@ -132,9 +134,34 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 		}
 
 		if len(response.Choices) > 0 {
-			delta := response.Choices[0].Delta
-			if delta.Content != "" {
-				responseChan <- delta.Content
+			choice := response.Choices[0]
+			streamContent := model.StreamContent{}
+
+			// 处理普通内容
+			if choice.Delta.Content != "" {
+				streamContent.Content = choice.Delta.Content
+			}
+
+			// 处理思考内容 - 通过反射或类型断言获取 reasoning_content
+			// 将整个 choice 转换为 map 来访问可能的 reasoning_content 字段
+			if choiceBytes, err := json.Marshal(choice); err == nil {
+				var choiceMap map[string]interface{}
+				if err := json.Unmarshal(choiceBytes, &choiceMap); err == nil {
+					if delta, exists := choiceMap["delta"]; exists {
+						if deltaMap, ok := delta.(map[string]interface{}); ok {
+							if reasoningContent, exists := deltaMap["reasoning_content"]; exists {
+								if reasoningStr, ok := reasoningContent.(string); ok && reasoningStr != "" {
+									streamContent.ReasoningContent = reasoningStr
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// 只要有任何内容就发送（包括空的 reasoning_content 开始标记）
+			if streamContent.Content != "" || streamContent.ReasoningContent != "" {
+				responseChan <- streamContent
 			}
 		}
 	}
