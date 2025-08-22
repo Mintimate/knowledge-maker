@@ -90,7 +90,7 @@ func (rs *RAGService) ProcessStreamChat(query string) (chan model.StreamContent,
 	errorChan := make(chan error, 1)
 
 	// 5. 启动协程处理流式响应
-	go rs.aiService.ProcessStreamResponse(stream, responseChan, errorChan)
+	go rs.aiService.ProcessStreamResponse(stream, responseChan, errorChan, query, knowledgeContext)
 
 	return responseChan, errorChan, nil
 }
