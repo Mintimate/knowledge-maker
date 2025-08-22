@@ -4,8 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
+	"os"
+	"time"
 
 	"knowledge-maker/internal/config"
+	"knowledge-maker/internal/model"
 
 	"github.com/sashabaranov/go-openai"
 )
@@ -115,16 +119,57 @@ func (ai *AIService) GenerateStreamResponse(systemPrompt, userQuery, knowledgeCo
 }
 
 // ProcessStreamResponse 处理流式响应并通过通道发送
-func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, responseChan chan<- string, errorChan chan<- error) {
+func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, responseChan chan<- model.StreamContent, errorChan chan<- error, userQuery, knowledgeContext string) {
 	defer close(responseChan)
 	defer close(errorChan)
 	defer stream.Close()
+
+	// 创建日志目录和文件
+	logDir := "logs"
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		log.Printf("无法创建日志目录: %v", err)
+	}
+	
+	logFileName := fmt.Sprintf("%s/stream_%s.log", logDir, time.Now().Format("2006-01-02"))
+	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Printf("无法创建日志文件: %v", err)
+	} else {
+		defer logFile.Close()
+	}
+
+	logger := log.New(logFile, "", log.LstdFlags)
+	
+	// 记录用户问题和知识库信息
+	logger.Printf("用户问题: %s", userQuery)
+	if knowledgeContext != "" {
+		logger.Printf("知识库获取成功，上下文长度 %d", len(knowledgeContext))
+	} else {
+		logger.Printf("知识库获取成功，上下文长度 0")
+	}
+
+	var reasoningStarted bool
+	var reasoningEnded bool
+	var answerStarted bool
+	var hasReasoningContent bool
 
 	for {
 		response, err := stream.Recv()
 		if err != nil {
 			if err == io.EOF {
-				// 流结束
+				// 记录是否有思考内容和回答结束
+				logger.Printf("是否有思考内容: %v", hasReasoningContent)
+				logger.Printf("内容回答结束")
+				
+				// 流结束，如果还在思考阶段，发送结束标记
+				if reasoningStarted && !reasoningEnded {
+					responseChan <- model.StreamContent{Content: "</think>"}
+					reasoningEnded = true
+				}
+				// 如果还没开始答案，发送答案开始标记
+				if !answerStarted {
+					responseChan <- model.StreamContent{Content: "<answer>"}
+				}
 				return
 			}
 			errorChan <- fmt.Errorf("接收流式响应失败: %v", err)
@@ -132,9 +177,51 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 		}
 
 		if len(response.Choices) > 0 {
-			delta := response.Choices[0].Delta
-			if delta.Content != "" {
-				responseChan <- delta.Content
+			choice := response.Choices[0]
+			streamContent := model.StreamContent{}
+
+			// 使用新版本 go-openai 的 reasoning_content 字段
+			if choice.Delta.ReasoningContent != "" {
+				// 第一次收到 reasoning_content 时发送开始标记
+				if !reasoningStarted {
+					responseChan <- model.StreamContent{Content: "<think>"}
+					reasoningStarted = true
+				}
+				
+				// 标记找到了思考内容
+				hasReasoningContent = true
+				
+				// 发送 reasoning_content 内容
+				streamContent.ReasoningContent = choice.Delta.ReasoningContent
+				
+				// 立即发送思考内容
+				responseChan <- streamContent
+			}
+
+			// 处理普通内容
+			if choice.Delta.Content != "" {
+				// 如果之前有 reasoning_content 但现在开始有普通内容，说明思考结束
+				if reasoningStarted && !reasoningEnded && choice.Delta.ReasoningContent == "" {
+					responseChan <- model.StreamContent{Content: "</think>"}
+					reasoningEnded = true
+				}
+				
+				// 如果思考已结束且还没开始答案，发送答案开始标记
+				if reasoningEnded && !answerStarted {
+					logger.Printf("内容回答开始")
+					responseChan <- model.StreamContent{Content: "<answer>"}
+					answerStarted = true
+				} else if !reasoningStarted && !answerStarted {
+					// 如果没有思考阶段，直接开始答案
+					logger.Printf("内容回答开始")
+					responseChan <- model.StreamContent{Content: "<answer>"}
+					answerStarted = true
+				}
+				
+				streamContent.Content = choice.Delta.Content
+				
+				// 发送普通内容
+				responseChan <- streamContent
 			}
 		}
 	}

@@ -75,10 +75,10 @@ func (h *RAGHandler) HandleStreamChat(c *gin.Context) {
 		return
 	}
 
-	// 发送流式数据
+	// 发送流式数据 - 简化版本，直接转发 ai.go 中的标记和内容
 	for {
 		select {
-		case content, ok := <-responseChan:
+		case streamContent, ok := <-responseChan:
 			if !ok {
 				// 流结束
 				c.SSEvent("done", gin.H{
@@ -87,11 +87,24 @@ func (h *RAGHandler) HandleStreamChat(c *gin.Context) {
 				})
 				return
 			}
-			// 发送内容片段
-			c.SSEvent("data", gin.H{
-				"content": content,
-			})
-			c.Writer.Flush()
+
+			// 检查是否包含思考内容
+			if streamContent.ReasoningContent != "" {
+				// 发送思考内容
+				c.SSEvent("data", gin.H{
+					"content": streamContent.ReasoningContent,
+				})
+				c.Writer.Flush()
+			}
+
+			// 检查是否有回答内容（包括标记）
+			if streamContent.Content != "" {
+				// 发送回答内容（包括标记）
+				c.SSEvent("data", gin.H{
+					"content": streamContent.Content,
+				})
+				c.Writer.Flush()
+			}
 
 		case err := <-errorChan:
 			if err != nil {

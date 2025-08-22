@@ -63,7 +63,7 @@ func (rs *RAGService) ProcessChat(query string) (*model.ChatResponse, error) {
 }
 
 // ProcessStreamChat 处理流式聊天请求的核心逻辑
-func (rs *RAGService) ProcessStreamChat(query string) (chan string, chan error, error) {
+func (rs *RAGService) ProcessStreamChat(query string) (chan model.StreamContent, chan error, error) {
 	log.Printf("收到流式查询: %s", query)
 
 	// 1. 查询知识库
@@ -86,11 +86,11 @@ func (rs *RAGService) ProcessStreamChat(query string) (chan string, chan error, 
 	}
 
 	// 4. 创建通道
-	responseChan := make(chan string, 100)
+	responseChan := make(chan model.StreamContent, 100)
 	errorChan := make(chan error, 1)
 
 	// 5. 启动协程处理流式响应
-	go rs.aiService.ProcessStreamResponse(stream, responseChan, errorChan)
+	go rs.aiService.ProcessStreamResponse(stream, responseChan, errorChan, query, knowledgeContext)
 
 	return responseChan, errorChan, nil
 }
