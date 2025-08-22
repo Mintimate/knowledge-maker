@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
+	"os"
 
 	"knowledge-maker/internal/config"
 	"knowledge-maker/internal/model"
@@ -122,36 +124,84 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 	defer close(errorChan)
 	defer stream.Close()
 
+	// 创建日志文件
+	logFile, err := os.OpenFile("stream_debug.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Printf("无法创建日志文件: %v", err)
+	} else {
+		defer logFile.Close()
+	}
+
+	logger := log.New(logFile, "", log.LstdFlags)
+	logger.Printf("=== 开始新的流式响应处理 ===")
+
+	var reasoningStarted bool
+	var reasoningEnded bool
+	var answerStarted bool
+
 	for {
 		response, err := stream.Recv()
 		if err != nil {
 			if err == io.EOF {
-				// 流结束
+				logger.Printf("流结束 - reasoningStarted: %v, reasoningEnded: %v, answerStarted: %v", 
+					reasoningStarted, reasoningEnded, answerStarted)
+				
+				// 流结束，如果还在思考阶段，发送结束标记
+				if reasoningStarted && !reasoningEnded {
+					logger.Printf("发送思考结束标记")
+					responseChan <- model.StreamContent{Content: "</think>"}
+					reasoningEnded = true
+				}
+				// 如果还没开始答案，发送答案开始标记
+				if !answerStarted {
+					logger.Printf("发送答案开始标记")
+					responseChan <- model.StreamContent{Content: "<answer>"}
+				}
 				return
 			}
+			logger.Printf("接收流式响应失败: %v", err)
 			errorChan <- fmt.Errorf("接收流式响应失败: %v", err)
 			return
+		}
+
+		// 记录原始响应
+		if responseBytes, err := json.Marshal(response); err == nil {
+			logger.Printf("原始响应: %s", string(responseBytes))
 		}
 
 		if len(response.Choices) > 0 {
 			choice := response.Choices[0]
 			streamContent := model.StreamContent{}
 
-			// 处理普通内容
-			if choice.Delta.Content != "" {
-				streamContent.Content = choice.Delta.Content
+			// 记录 choice 详情
+			if choiceBytes, err := json.Marshal(choice); err == nil {
+				logger.Printf("Choice详情: %s", string(choiceBytes))
 			}
 
-			// 处理思考内容 - 通过反射或类型断言获取 reasoning_content
-			// 将整个 choice 转换为 map 来访问可能的 reasoning_content 字段
+			// 处理思考内容 - 多种方式尝试获取 reasoning_content
+			var hasReasoningContent bool
+			var reasoningStr string
+
+			// 方法1: 直接尝试访问可能的字段
 			if choiceBytes, err := json.Marshal(choice); err == nil {
 				var choiceMap map[string]interface{}
 				if err := json.Unmarshal(choiceBytes, &choiceMap); err == nil {
+					logger.Printf("Choice Map: %+v", choiceMap)
+					
 					if delta, exists := choiceMap["delta"]; exists {
 						if deltaMap, ok := delta.(map[string]interface{}); ok {
-							if reasoningContent, exists := deltaMap["reasoning_content"]; exists {
-								if reasoningStr, ok := reasoningContent.(string); ok && reasoningStr != "" {
-									streamContent.ReasoningContent = reasoningStr
+							logger.Printf("Delta Map: %+v", deltaMap)
+							
+							// 尝试多种可能的字段名
+							possibleFields := []string{"reasoning_content", "reasoning", "thought", "thinking"}
+							for _, field := range possibleFields {
+								if reasoningContent, exists := deltaMap[field]; exists {
+									if str, ok := reasoningContent.(string); ok && str != "" {
+										hasReasoningContent = true
+										reasoningStr = str
+										logger.Printf("找到 %s 字段: %s", field, str)
+										break
+									}
 								}
 							}
 						}
@@ -159,8 +209,49 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 				}
 			}
 
-			// 只要有任何内容就发送（包括空的 reasoning_content 开始标记）
-			if streamContent.Content != "" || streamContent.ReasoningContent != "" {
+			// 如果找到了 reasoning_content
+			if hasReasoningContent {
+				// 第一次收到 reasoning_content 时发送开始标记
+				if !reasoningStarted {
+					logger.Printf("第一次收到思考内容，发送开始标记")
+					responseChan <- model.StreamContent{Content: "<think>"}
+					reasoningStarted = true
+				}
+				
+				// 发送 reasoning_content 内容
+				streamContent.ReasoningContent = reasoningStr
+				logger.Printf("发送思考内容: %s", reasoningStr)
+				
+				// 立即发送思考内容
+				responseChan <- streamContent
+			}
+
+			// 处理普通内容
+			if choice.Delta.Content != "" {
+				logger.Printf("收到普通内容: %s", choice.Delta.Content)
+				
+				// 如果之前有 reasoning_content 但现在开始有普通内容，说明思考结束
+				if reasoningStarted && !reasoningEnded && !hasReasoningContent {
+					logger.Printf("思考阶段结束，发送结束标记")
+					responseChan <- model.StreamContent{Content: "</think>"}
+					reasoningEnded = true
+				}
+				
+				// 如果思考已结束且还没开始答案，发送答案开始标记
+				if reasoningEnded && !answerStarted {
+					logger.Printf("开始答案阶段")
+					responseChan <- model.StreamContent{Content: "<answer>"}
+					answerStarted = true
+				} else if !reasoningStarted && !answerStarted {
+					// 如果没有思考阶段，直接开始答案
+					logger.Printf("没有思考阶段，直接开始答案")
+					responseChan <- model.StreamContent{Content: "<answer>"}
+					answerStarted = true
+				}
+				
+				streamContent.Content = choice.Delta.Content
+				
+				// 发送普通内容
 				responseChan <- streamContent
 			}
 		}
