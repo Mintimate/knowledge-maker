@@ -5,6 +5,7 @@
 server:
   port: "8082"
   mode: "debug"  # debug, release, test
+  allow_domain: ""  # 留空表示允许所有域名，可以设置具体域名如 "https://example.com"
 
 # AI 服务配置
 ai:
@@ -22,3 +23,9 @@ knowledge:
 rag:
   system_prompt: |
     你是 AI 助手，专门检索知识库内的内容，拒绝其他内容（如：情感咨询、数学计算、作文写作和政治主张）。请为用户提供准确的回答。
+
+
+# 日志配置
+log:
+  dir: "logs"        # 日志目录
+  level: "info"      # 日志级别: debug, info, warn, error
