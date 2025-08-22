@@ -90,7 +90,13 @@ func main() {
 
 	// 添加 CORS 中间件
 	r.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
+		// 根据配置设置允许的域名
+		allowOrigin := "*"
+		if cfg.Server.AllowDomain != "" {
+			allowOrigin = cfg.Server.AllowDomain
+		}
+		
+		c.Header("Access-Control-Allow-Origin", allowOrigin)
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 

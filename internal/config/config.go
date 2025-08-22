@@ -52,8 +52,9 @@ type Config struct {
 
 // ServerConfig 服务器配置
 type ServerConfig struct {
-	Port string `yaml:"port"`
-	Mode string `yaml:"mode"` // debug, release, test
+	Port        string `yaml:"port"`
+	Mode        string `yaml:"mode"`
+	AllowDomain string `yaml:"allow_domain"`
 }
 
 // AIConfig AI 服务配置
@@ -124,6 +125,9 @@ func overrideWithEnv(config *Config) {
 	if mode := os.Getenv("GIN_MODE"); mode != "" {
 		config.Server.Mode = mode
 	}
+	if allowDomain := os.Getenv("ALLOW_DOMAIN"); allowDomain != "" {
+		config.Server.AllowDomain = allowDomain
+	}
 
 	// AI 配置
 	if baseURL := os.Getenv("AI_BASE_URL"); baseURL != "" {
@@ -147,6 +151,11 @@ func overrideWithEnv(config *Config) {
 	// RAG 配置
 	if systemPrompt := os.Getenv("RAG_SYSTEM_PROMPT"); systemPrompt != "" {
 		config.RAG.SystemPrompt = systemPrompt
+	}
+
+	// 日志配置
+	if logDir := os.Getenv("LOG_DIR"); logDir != "" {
+		config.Log.Dir = logDir
 	}
 }
 
