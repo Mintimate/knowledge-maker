@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -52,9 +53,9 @@ type Config struct {
 
 // ServerConfig 服务器配置
 type ServerConfig struct {
-	Port        string `yaml:"port"`
-	Mode        string `yaml:"mode"`
-	AllowDomain string `yaml:"allow_domain"`
+	Port         string   `yaml:"port"`
+	Mode         string   `yaml:"mode"`
+	AllowDomains []string `yaml:"allow_domains"`
 }
 
 // AIConfig AI 服务配置
@@ -125,8 +126,23 @@ func overrideWithEnv(config *Config) {
 	if mode := os.Getenv("GIN_MODE"); mode != "" {
 		config.Server.Mode = mode
 	}
-	if allowDomain := os.Getenv("ALLOW_DOMAIN"); allowDomain != "" {
-		config.Server.AllowDomain = allowDomain
+	if allowDomains := os.Getenv("ALLOW_DOMAINS"); allowDomains != "" {
+		// 支持逗号分隔的多个域名
+		config.Server.AllowDomains = strings.Split(allowDomains, ",")
+		for i, domain := range config.Server.AllowDomains {
+			config.Server.AllowDomains[i] = strings.TrimSpace(domain)
+		}
+	}
+	// 向后兼容：如果设置了 ALLOW_DOMAIN 但没有设置 ALLOW_DOMAINS，则转换为数组
+	if allowDomain := os.Getenv("ALLOW_DOMAIN"); allowDomain != "" && len(config.Server.AllowDomains) == 0 {
+		config.Server.AllowDomains = []string{allowDomain}
+	}
+	if allowDomains := os.Getenv("ALLOW_DOMAINS"); allowDomains != "" {
+		// 支持逗号分隔的多个域名
+		config.Server.AllowDomains = strings.Split(allowDomains, ",")
+		for i, domain := range config.Server.AllowDomains {
+			config.Server.AllowDomains[i] = strings.TrimSpace(domain)
+		}
 	}
 
 	// AI 配置

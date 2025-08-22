@@ -5,7 +5,10 @@
 server:
   port: "8082"
   mode: "debug"  # debug, release, test
-  allow_domain: ""  # 留空表示允许所有域名，可以设置具体域名如 "https://example.com"
+  # 支持多个域名配置，留空表示允许所有域名
+  allow_domains:
+    - "https://www.mintimate.cc"
+    - "https://mintimate.cc"
 
 # AI 服务配置
 ai:

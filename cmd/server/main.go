@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"knowledge-maker/internal/config"
 	"knowledge-maker/internal/handler"
@@ -88,12 +89,25 @@ func main() {
 	// 创建 Gin 路由器
 	r := gin.Default()
 
+	// 设置信任的代理以解决 GIN 代理警告
+	trustedProxies := []string{"127.0.0.1", "::1"}
+	if err := r.SetTrustedProxies(trustedProxies); err != nil {
+		logger.Warn("设置信任代理失败: %v", err)
+	}
+
 	// 添加 CORS 中间件
 	r.Use(func(c *gin.Context) {
-		// 根据配置设置允许的域名
+		origin := c.Request.Header.Get("Origin")
 		allowOrigin := "*"
-		if cfg.Server.AllowDomain != "" {
-			allowOrigin = cfg.Server.AllowDomain
+		
+		// 检查域名配置
+		if len(cfg.Server.AllowDomains) > 0 {
+			for _, domain := range cfg.Server.AllowDomains {
+				if domain != "" && (origin == domain || origin == strings.TrimSuffix(domain, "/")) {
+					allowOrigin = origin
+					break
+				}
+			}
 		}
 		
 		c.Header("Access-Control-Allow-Origin", allowOrigin)
