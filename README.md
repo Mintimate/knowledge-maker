@@ -1,161 +1,194 @@
-# Knowledge Maker - 知识库 RAG 服务
+# Knowledge Maker - RAG 知识库问答服务
 
-基于 Go 和 Gin 框架构建的知识库检索增强生成（RAG）服务，专门用于 Rime 输入法和薄荷输入法相关内容的智能问答。
+基于 RAG（Retrieval-Augmented Generation）技术的智能问答服务，支持流式响应和思考内容展示。
 
-## 项目结构
+## ✨ 主要特性
 
-```
-knowledge-maker/
-├── cmd/                    # 应用程序入口
-│   └── server/            # 服务器主程序
-│       └── main.go        # 主入口文件
-├── internal/              # 内部包（不对外暴露）
-│   ├── config/           # 配置管理
-│   │   └── config.go     # 配置结构和加载
-│   ├── handler/          # HTTP 处理器
-│   │   └── rag.go        # RAG 相关路由处理
-│   ├── model/            # 数据模型
-│   │   ├── request.go    # 请求模型
-│   │   └── response.go   # 响应模型
-│   └── service/          # 业务逻辑服务
-│       ├── ai.go         # AI 服务
-│       ├── knowledge.go  # 知识库服务
-│       └── rag.go        # RAG 核心服务
-├── go.mod               # Go 模块文件
-├── go.sum               # Go 依赖锁定文件
-└── README.md           # 项目说明
-```
+- 🤖 **智能问答**：基于知识库检索的 AI 问答服务
+- 🌊 **流式响应**：支持实时流式输出，提升用户体验
+- 🧠 **思考过程展示**：支持 reasoning_content 解析，展示 AI 思考过程
+- 📝 **统一日志系统**：配置化的日志管理，支持按日期分文件存储
+- 🔒 **CORS 安全配置**：支持配置化的跨域访问控制
+- ⚙️ **灵活配置**：支持配置文件和环境变量双重配置方式
 
-## 架构设计
+## 🚀 快速开始
 
-### 分层架构
-- **Handler 层**: 处理 HTTP 请求和响应，负责参数验证和错误处理
-- **Service 层**: 核心业务逻辑，包含 RAG、AI 和知识库服务
-- **Model 层**: 数据结构定义，包含请求和响应模型
-- **Config 层**: 配置管理，支持环境变量和默认值
+### 环境要求
 
-### 服务组件
-1. **KnowledgeService**: 负责与外部知识库 API 交互
-2. **AIService**: 负责与 AI 模型（DeepSeek）交互，支持普通和流式响应
-3. **RAGService**: 整合知识库检索和 AI 生成的核心服务
+- 支持的 AI 服务（如 DeepSeek、混元等）
+- 知识库服务
 
-## 功能特性
+### 安装运行
 
-- ✅ 知识库检索增强生成（RAG）
-- ✅ 支持普通和流式聊天响应
-- ✅ 专门针对 Rime 和薄荷输入法的智能问答
-- ✅ 配置化管理，支持环境变量
-- ✅ 清晰的分层架构和模块化设计
-- ✅ CORS 支持，便于前端集成
-- ✅ 健康检查接口
-
-## 本地开发
-
-如果需要本地开发，确保安装了 Go 1.24+：
-
+1. **克隆项目**
 ```bash
-# 下载依赖
-go mod download
-
-# 开发模式运行
-go run ./cmd/server/main.go
+git clone <repository-url>
+cd knowledge-maker
 ```
 
-## 配置说明
+2. **安装依赖**
+```bash
+go mod tidy
+```
 
-项目支持两种配置方式：
+3. **配置服务**
+```bash
+# 编辑配置文件
+vim config.yml
+```
 
-### 1. 配置文件（推荐）
+4. **启动服务**
+```bash
+go run cmd/server/main.go
+```
 
-使用 `config.yml` 文件进行配置：
+服务将在 `http://localhost:8082` 启动。
+
+## ⚙️ 配置说明
+
+### 配置文件 (config.yml)
 
 ```yaml
 # 服务器配置
 server:
-  port: "8081"
-  mode: "debug"  # debug, release, test
+  port: "8082"                    # 服务端口
+  mode: "debug"                   # 运行模式: debug, release, test
+  # 支持多个域名配置，留空表示允许所有域名
+  allow_domains:
+    - "https://www.mintimate.cc"
+    - "https://mintimate.cc"
 
 # AI 服务配置
 ai:
-  base_url: "https://api.deepseek.com/v1"
-  api_key: "your_api_key_here"
-  model: "deepseek-chat"
+  base_url: "https://api.example.com/v1"  # AI 服务地址
+  api_key: "your-api-key"                 # API 密钥
+  model: "your-model"                     # 使用的模型
 
 # 知识库配置
 knowledge:
-  base_url: "https://api.cnb.cool/Mintimate/rime/DocVitePressOMR/-/knowledge/base/query"
-  token: "your_token_here"
+  base_url: "https://knowledge.example.com/query"  # 知识库查询地址
+  token: "your-knowledge-token"                     # 知识库访问令牌
+
+# RAG 配置
+rag:
+  system_prompt: |
+    你是 AI 助手，专门检索相关内容...
+    # 系统提示词配置
+
+# 日志配置
+log:
+  dir: "logs"          # 日志目录
+  level: "info"        # 日志级别: debug, info, warn, error
 ```
 
-### 2. 环境变量（优先级更高）
+### 环境变量配置
 
-环境变量会覆盖配置文件中的设置：
+环境变量优先级高于配置文件：
 
 ```bash
 # 服务器配置
-export SERVER_PORT=8082
-export GIN_MODE=release
-
-# 知识库配置
-export KNOWLEDGE_BASE_URL="your_knowledge_base_url"
-export KNOWLEDGE_TOKEN="your_token_here"
+export SERVER_PORT="8082"
+export GIN_MODE="release"
+# 支持多个域名，用逗号分隔
+export ALLOW_DOMAINS="https://www.mintimate.cc,https://mintimate.cc"
+# 向后兼容：单域名配置（如果没有设置 ALLOW_DOMAINS）
+export ALLOW_DOMAIN="https://yourdomain.com"
 
 # AI 服务配置
-export AI_API_KEY="your_api_key_here"
-export AI_BASE_URL="https://api.deepseek.com/v1"
-export AI_MODEL="deepseek-chat"
+export AI_BASE_URL="https://api.example.com/v1"
+export AI_API_KEY="your-api-key"
+export AI_MODEL="your-model"
+
+# 知识库配置
+export KNOWLEDGE_BASE_URL="https://knowledge.example.com/query"
+export KNOWLEDGE_TOKEN="your-knowledge-token"
+
+# RAG 配置
+export RAG_SYSTEM_PROMPT="你是 AI 助手..."
+
+# 日志配置
+export LOG_DIR="./logs"
 ```
 
-### 配置管理
+## 📡 API 接口
 
-配置文件会按以下优先级加载：
-1. 环境变量（最高优先级）
-2. `config.yml` 配置文件
-
-
-## API 接口
-
-### 1. 健康检查
-```
+### 健康检查
+```http
 GET /api/v1/health
 ```
 
-### 2. 普通聊天
-```
+### 普通问答
+```http
 POST /api/v1/chat
 Content-Type: application/json
 
 {
-  "query": "如何配置 Rime 输入法？"
+  "query": "你的问题"
 }
 ```
 
-### 3. 流式聊天
-```
+### 流式问答
+```http
 POST /api/v1/chat/stream
 Content-Type: application/json
 
 {
-  "query": "薄荷输入法有什么特色功能？"
+  "query": "你的问题"
 }
 ```
 
-## 技术栈
+流式响应格式：
+```
+event: data
+data: {"content": "<think>"}
 
-- **框架**: Gin (HTTP 框架)
-- **AI 集成**: OpenAI Go SDK (兼容 DeepSeek API)
-- **配置管理**: YAML 配置文件 + 环境变量
-- **部署方式**: Docker + Docker Compose
-- **构建工具**: Docker 多阶段构建
+event: data
+data: {"content": "AI 的思考内容..."}
 
-## 贡献指南
+event: data
+data: {"content": "</think>"}
 
-1. Fork 项目
-2. 创建功能分支
-3. 提交更改
-4. 推送到分支
-5. 创建 Pull Request
+event: data
+data: {"content": "<answer>"}
 
-## Licence
+event: data
+data: {"content": "AI 的回答内容..."}
 
-[![GPLv3](gplv3.png)](LICENSE)
+event: done
+data: {"success": true, "message": "回答完成"}
+```
+
+## 🛠️ 开发指南
+
+### 项目结构
+```
+knowledge-maker/
+├── cmd/server/          # 主程序入口
+├── internal/
+│   ├── config/         # 配置管理
+│   ├── handler/        # HTTP 处理器
+│   ├── logger/         # 日志系统
+│   ├── model/          # 数据模型
+│   └── service/        # 业务逻辑
+├── logs/               # 日志文件
+├── static/             # 静态资源
+└── config.yml          # 配置文件
+```
+
+### 添加新功能
+1. 在 `internal/service/` 中添加业务逻辑
+2. 在 `internal/handler/` 中添加 HTTP 处理
+3. 在 `internal/model/` 中定义数据结构
+4. 更新配置文件和环境变量支持
+
+## 📄 许可证
+
+本项目采用 GPL-3.0 许可证。详见 [LICENSE](LICENSE) 文件。
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📞 支持
+
+如有问题，请提交 Issue 或联系维护者。
