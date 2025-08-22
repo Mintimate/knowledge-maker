@@ -8,12 +8,46 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// LogConfig 日志配置
+type LogConfig struct {
+	Dir        string `yaml:"dir"`
+	Level      string `yaml:"level"`
+	MaxSize    int    `yaml:"max_size"`
+	MaxBackups int    `yaml:"max_backups"`
+	MaxAge     int    `yaml:"max_age"`
+}
+
+// DatabaseConfig 数据库配置
+type DatabaseConfig struct {
+	Type     string `yaml:"type"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	Database string `yaml:"database"`
+}
+
+// KnowledgeConfig 知识库配置
+type KnowledgeConfig struct {
+	BaseURL  string         `yaml:"base_url"`
+	Token    string         `yaml:"token"`
+	VectorDB VectorDBConfig `yaml:"vector_db"`
+}
+
+// VectorDBConfig 向量数据库配置
+type VectorDBConfig struct {
+	Type string `yaml:"type"`
+	URL  string `yaml:"url"`
+}
+
 // Config 应用配置
 type Config struct {
 	Server    ServerConfig    `yaml:"server"`
 	AI        AIConfig        `yaml:"ai"`
-	Knowledge KnowledgeConfig `yaml:"knowledge"`
 	RAG       RAGConfig       `yaml:"rag"`
+	Database  DatabaseConfig  `yaml:"database"`
+	Knowledge KnowledgeConfig `yaml:"knowledge"`
+	Log       LogConfig       `yaml:"log"`
 }
 
 // ServerConfig 服务器配置
@@ -29,11 +63,6 @@ type AIConfig struct {
 	Model   string `yaml:"model"`
 }
 
-// KnowledgeConfig 知识库配置
-type KnowledgeConfig struct {
-	BaseURL string `yaml:"base_url"`
-	Token   string `yaml:"token"`
-}
 
 // RAGConfig RAG 服务配置
 type RAGConfig struct {

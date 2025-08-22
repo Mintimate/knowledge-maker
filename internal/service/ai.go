@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
-	"os"
-	"time"
 
 	"knowledge-maker/internal/config"
+	"knowledge-maker/internal/logger"
 	"knowledge-maker/internal/model"
 
 	"github.com/sashabaranov/go-openai"
@@ -124,28 +122,14 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 	defer close(errorChan)
 	defer stream.Close()
 
-	// 创建日志目录和文件
-	logDir := "logs"
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		log.Printf("无法创建日志目录: %v", err)
-	}
+	// 使用统一日志系统记录流式处理信息
+	logger.Info("ProcessStreamResponse 开始处理")
+	logger.Info("用户问题: %s", userQuery)
 	
-	logFileName := fmt.Sprintf("%s/stream_%s.log", logDir, time.Now().Format("2006-01-02"))
-	logFile, err := os.OpenFile(logFileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		log.Printf("无法创建日志文件: %v", err)
-	} else {
-		defer logFile.Close()
-	}
-
-	logger := log.New(logFile, "", log.LstdFlags)
-	
-	// 记录用户问题和知识库信息
-	logger.Printf("用户问题: %s", userQuery)
 	if knowledgeContext != "" {
-		logger.Printf("知识库获取成功，上下文长度 %d", len(knowledgeContext))
+		logger.Info("知识库上下文长度: %d", len(knowledgeContext))
 	} else {
-		logger.Printf("知识库获取成功，上下文长度 0")
+		logger.Info("知识库上下文长度: 0")
 	}
 
 	var reasoningStarted bool
@@ -158,8 +142,8 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 		if err != nil {
 			if err == io.EOF {
 				// 记录是否有思考内容和回答结束
-				logger.Printf("是否有思考内容: %v", hasReasoningContent)
-				logger.Printf("内容回答结束")
+				logger.Info("是否有思考内容: %v", hasReasoningContent)
+				logger.Info("内容回答结束")
 				
 				// 流结束，如果还在思考阶段，发送结束标记
 				if reasoningStarted && !reasoningEnded {
@@ -172,6 +156,7 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 				}
 				return
 			}
+			logger.Error("接收流式响应失败: %v", err)
 			errorChan <- fmt.Errorf("接收流式响应失败: %v", err)
 			return
 		}
@@ -182,8 +167,11 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 
 			// 使用新版本 go-openai 的 reasoning_content 字段
 			if choice.Delta.ReasoningContent != "" {
+				logger.Debug("收到思考内容: %s", choice.Delta.ReasoningContent[:min(50, len(choice.Delta.ReasoningContent))])
+				
 				// 第一次收到 reasoning_content 时发送开始标记
 				if !reasoningStarted {
+					logger.Info("发送思考开始标记")
 					responseChan <- model.StreamContent{Content: "<think>"}
 					reasoningStarted = true
 				}
@@ -200,20 +188,23 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 
 			// 处理普通内容
 			if choice.Delta.Content != "" {
+				logger.Debug("收到普通内容: %s", choice.Delta.Content[:min(20, len(choice.Delta.Content))])
+				
 				// 如果之前有 reasoning_content 但现在开始有普通内容，说明思考结束
 				if reasoningStarted && !reasoningEnded && choice.Delta.ReasoningContent == "" {
+					logger.Info("思考阶段结束，发送结束标记")
 					responseChan <- model.StreamContent{Content: "</think>"}
 					reasoningEnded = true
 				}
 				
 				// 如果思考已结束且还没开始答案，发送答案开始标记
 				if reasoningEnded && !answerStarted {
-					logger.Printf("内容回答开始")
+					logger.Info("内容回答开始")
 					responseChan <- model.StreamContent{Content: "<answer>"}
 					answerStarted = true
 				} else if !reasoningStarted && !answerStarted {
 					// 如果没有思考阶段，直接开始答案
-					logger.Printf("内容回答开始")
+					logger.Info("内容回答开始（无思考阶段）")
 					responseChan <- model.StreamContent{Content: "<answer>"}
 					answerStarted = true
 				}
@@ -225,4 +216,12 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 			}
 		}
 	}
+}
+
+// min 辅助函数
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

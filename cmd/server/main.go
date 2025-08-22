@@ -6,6 +6,7 @@ import (
 
 	"knowledge-maker/internal/config"
 	"knowledge-maker/internal/handler"
+	"knowledge-maker/internal/logger"
 	"knowledge-maker/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -69,8 +70,17 @@ func main() {
 	// 加载配置
 	cfg, err := config.LoadConfig("")
 	if err != nil {
-		log.Fatal("加载配置失败:", err)
+		log.Fatalf("加载配置失败: %v", err)
 	}
+
+	// 初始化日志系统
+	if err := logger.Init(&cfg.Log); err != nil {
+		log.Fatalf("初始化日志系统失败: %v", err)
+	}
+	defer logger.Close()
+
+	logger.Info("应用启动中...")
+	logger.Info("配置加载完成 - 服务端口: %s, 模式: %s", cfg.Server.Port, cfg.Server.Mode)
 
 	// 设置 Gin 模式
 	gin.SetMode(cfg.Server.Mode)

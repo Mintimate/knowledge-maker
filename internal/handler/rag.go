@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"knowledge-maker/internal/logger"
 	"knowledge-maker/internal/model"
 	"knowledge-maker/internal/service"
 
@@ -108,6 +109,7 @@ func (h *RAGHandler) HandleStreamChat(c *gin.Context) {
 
 		case err := <-errorChan:
 			if err != nil {
+				logger.Error("流式响应错误: %v", err)
 				c.SSEvent("error", gin.H{
 					"success": false,
 					"message": fmt.Sprintf("流式响应错误: %v", err),
