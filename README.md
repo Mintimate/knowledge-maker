@@ -68,8 +68,7 @@ ai:
 knowledge:
   base_url: "https://knowledge.example.com/query"  # 知识库查询地址
   token: "your-knowledge-token"                     # 知识库访问令牌
-  query_limit: 5                                    # 单次查询返回的最大结果数量
-  max_requests_per_minute: 60                       # 每分钟最大请求次数限制
+  top_k: 5                                          # 单次查询返回的最大结果数量
 
 # RAG 配置
 rag:
@@ -104,8 +103,7 @@ export AI_MODEL="your-model"
 # 知识库配置
 export KNOWLEDGE_BASE_URL="https://knowledge.example.com/query"
 export KNOWLEDGE_TOKEN="your-knowledge-token"
-export KNOWLEDGE_QUERY_LIMIT="5"
-export KNOWLEDGE_MAX_REQUESTS_PER_MINUTE="60"
+export KNOWLEDGE_TOP_K="5"
 
 # RAG 配置
 export RAG_SYSTEM_PROMPT="你是 AI 助手..."
