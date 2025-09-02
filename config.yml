@@ -20,6 +20,7 @@ ai:
 knowledge:
   base_url: "https://api.example.com/knowledge/base/query"
   token: "your_token_here"
+  top_k: 5
 
 
 # RAG 服务配置
