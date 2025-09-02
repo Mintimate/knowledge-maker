@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -32,6 +33,7 @@ type DatabaseConfig struct {
 type KnowledgeConfig struct {
 	BaseURL  string         `yaml:"base_url"`
 	Token    string         `yaml:"token"`
+	TopK     int            `yaml:"top_k"`
 	VectorDB VectorDBConfig `yaml:"vector_db"`
 }
 
@@ -96,6 +98,9 @@ func LoadConfig(configPath string) (*Config, error) {
 			return nil, fmt.Errorf("加载配置文件失败: %v", err)
 		}
 	}
+
+	// 设置默认值
+	setDefaults(config)
 
 	// 环境变量覆盖配置文件设置
 	overrideWithEnv(config)
@@ -163,6 +168,11 @@ func overrideWithEnv(config *Config) {
 	if token := os.Getenv("KNOWLEDGE_TOKEN"); token != "" {
 		config.Knowledge.Token = token
 	}
+	if topK := os.Getenv("KNOWLEDGE_TOP_K"); topK != "" {
+		if k, err := strconv.Atoi(topK); err == nil {
+			config.Knowledge.TopK = k
+		}
+	}
 
 	// RAG 配置
 	if systemPrompt := os.Getenv("RAG_SYSTEM_PROMPT"); systemPrompt != "" {
@@ -181,6 +191,14 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// setDefaults 设置默认配置值
+func setDefaults(config *Config) {
+	// 知识库默认配置
+	if config.Knowledge.TopK == 0 {
+		config.Knowledge.TopK = 3
+	}
 }
 
 // fileExists 检查文件是否存在

@@ -8,4 +8,5 @@ type ChatRequest struct {
 // KnowledgeQuery 知识库查询请求
 type KnowledgeQuery struct {
 	Query string `json:"query"`
+	TopK int `json:"top_k"`
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
+	"time"
 
 	"knowledge-maker/internal/config"
 	"knowledge-maker/internal/logger"
@@ -22,6 +24,17 @@ type AIService struct {
 func NewAIService(cfg *config.Config) *AIService {
 	openaiConfig := openai.DefaultConfig(cfg.AI.APIKey)
 	openaiConfig.BaseURL = cfg.AI.BaseURL
+	
+	// 对于流式响应，优化 HTTP 客户端配置
+	openaiConfig.HTTPClient = &http.Client{
+		Timeout: 0, // 不设置超时，让流式响应自然结束
+		Transport: &http.Transport{
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 100,
+			IdleConnTimeout:     90 * time.Second,
+			DisableCompression:  true, // 禁用压缩以减少延迟
+		},
+	}
 
 	client := openai.NewClientWithConfig(openaiConfig)
 
@@ -77,6 +90,8 @@ func (ai *AIService) GenerateResponse(systemPrompt, userQuery, knowledgeContext 
 
 // GenerateStreamResponse 生成流式 AI 回复
 func (ai *AIService) GenerateStreamResponse(systemPrompt, userQuery, knowledgeContext string) (*openai.ChatCompletionStream, error) {
+	logger.Info("开始创建 AI 流式请求")
+	
 	// 构建消息
 	messages := []openai.ChatCompletionMessage{
 		{
@@ -87,15 +102,18 @@ func (ai *AIService) GenerateStreamResponse(systemPrompt, userQuery, knowledgeCo
 
 	// 如果有知识库上下文，添加到消息中
 	if knowledgeContext != "" {
+
 		messages = append(messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
 			Content: fmt.Sprintf("参考知识库内容：\n%s\n\n用户问题：%s", knowledgeContext, userQuery),
 		})
+		logger.Info("已添加知识库上下文，总消息数: %d，上下文长度: %d", len(messages), len(knowledgeContext))
 	} else {
 		messages = append(messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
 			Content: userQuery,
 		})
+		logger.Info("无知识库上下文，总消息数: %d", len(messages))
 	}
 
 	// 创建流式聊天完成请求
@@ -107,19 +125,21 @@ func (ai *AIService) GenerateStreamResponse(systemPrompt, userQuery, knowledgeCo
 		Stream:      true, // 启用流式输出
 	}
 
-	// 调用流式 AI API
+	logger.Info("准备调用 AI API，模型: %s", ai.model)
+	
+	// 调用流式 AI API - 不使用超时上下文，让流式响应立即开始
 	stream, err := ai.client.CreateChatCompletionStream(context.Background(), req)
 	if err != nil {
+		logger.Error("AI 流式生成回复失败: %v", err)
 		return nil, fmt.Errorf("AI 流式生成回复失败: %v", err)
 	}
 
+	logger.Info("AI 流式请求创建成功")
 	return stream, nil
 }
 
 // ProcessStreamResponse 处理流式响应并通过通道发送
 func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, responseChan chan<- model.StreamContent, errorChan chan<- error, userQuery, knowledgeContext string) {
-	defer close(responseChan)
-	defer close(errorChan)
 	defer stream.Close()
 
 	// 使用统一日志系统记录流式处理信息
@@ -131,6 +151,9 @@ func (ai *AIService) ProcessStreamResponse(stream *openai.ChatCompletionStream, 
 	} else {
 		logger.Info("知识库上下文长度: 0")
 	}
+
+	// 立即开始处理流式响应
+	logger.Info("开始接收流式数据")
 
 	var reasoningStarted bool
 	var reasoningEnded bool

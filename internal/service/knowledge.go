@@ -15,6 +15,7 @@ import (
 type KnowledgeService struct {
 	baseURL string
 	token   string
+	config  *config.Config
 }
 
 // NewKnowledgeService 创建知识库服务实例
@@ -22,6 +23,7 @@ func NewKnowledgeService(cfg *config.Config) *KnowledgeService {
 	return &KnowledgeService{
 		baseURL: cfg.Knowledge.BaseURL,
 		token:   cfg.Knowledge.Token,
+		config:  cfg,
 	}
 }
 
@@ -30,6 +32,7 @@ func (ks *KnowledgeService) QueryKnowledge(query string) (string, error) {
 	// 构建请求体
 	requestBody := model.KnowledgeQuery{
 		Query: query,
+		TopK:  ks.config.Knowledge.TopK,
 	}
 
 	jsonData, err := json.Marshal(requestBody)

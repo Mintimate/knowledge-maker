@@ -76,6 +76,13 @@ func (h *RAGHandler) HandleStreamChat(c *gin.Context) {
 		return
 	}
 
+	// 立即发送连接建立确认
+	c.SSEvent("connected", gin.H{
+		"success": true,
+		"message": "连接已建立，开始处理...",
+	})
+	c.Writer.Flush()
+
 	// 发送流式数据 - 简化版本，直接转发 ai.go 中的标记和内容
 	for {
 		select {
