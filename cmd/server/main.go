@@ -130,8 +130,17 @@ func main() {
 	aiService := service.NewAIService(cfg)
 	ragService := service.NewRAGService(knowledgeService, aiService, cfg)
 
+	// 初始化验证码服务
+	captchaService, err := service.NewCaptchaService(&cfg.Captcha)
+	if err != nil {
+		logger.Warn("验证码服务初始化失败，将跳过验证码验证: %v", err)
+		captchaService = nil
+	} else {
+		logger.Info("验证码服务初始化成功")
+	}
+
 	// 初始化处理器
-	ragHandler := handler.NewRAGHandler(ragService)
+	ragHandler := handler.NewRAGHandler(ragService, captchaService)
 
 	// 注册路由
 	api := r.Group("/api/v1")

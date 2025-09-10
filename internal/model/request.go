@@ -1,8 +1,17 @@
 package model
 
+// ChatMessage 聊天消息结构
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
 // ChatRequest 聊天请求结构
 type ChatRequest struct {
-	Query string `json:"query" binding:"required"`
+	Query          string        `json:"Query" binding:"required"`
+	History        []ChatMessage `json:"History,omitempty"`
+	CaptchaTicket  string        `json:"CaptchaTicket,omitempty"`
+	CaptchaRandstr string        `json:"CaptchaRandstr,omitempty"`
 }
 
 // KnowledgeQuery 知识库查询请求

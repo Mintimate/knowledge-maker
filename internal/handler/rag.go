@@ -13,13 +13,15 @@ import (
 
 // RAGHandler RAG 处理器
 type RAGHandler struct {
-	ragService *service.RAGService
+	ragService     *service.RAGService
+	captchaService *service.CaptchaService
 }
 
 // NewRAGHandler 创建 RAG 处理器实例
-func NewRAGHandler(ragService *service.RAGService) *RAGHandler {
+func NewRAGHandler(ragService *service.RAGService, captchaService *service.CaptchaService) *RAGHandler {
 	return &RAGHandler{
-		ragService: ragService,
+		ragService:     ragService,
+		captchaService: captchaService,
 	}
 }
 
@@ -30,6 +32,15 @@ func (h *RAGHandler) HandleChat(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, model.ChatResponse{
 			Success: false,
 			Message: "请求参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	// 验证码验证
+	if err := h.verifyCaptcha(req, c.ClientIP()); err != nil {
+		c.JSON(http.StatusBadRequest, model.ChatResponse{
+			Success: false,
+			Message: err.Error(),
 		})
 		return
 	}
@@ -56,6 +67,15 @@ func (h *RAGHandler) HandleStreamChat(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, model.ChatResponse{
 			Success: false,
 			Message: "请求参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	// 验证码验证
+	if err := h.verifyCaptcha(req, c.ClientIP()); err != nil {
+		c.JSON(http.StatusBadRequest, model.ChatResponse{
+			Success: false,
+			Message: err.Error(),
 		})
 		return
 	}
@@ -129,4 +149,32 @@ func (h *RAGHandler) HandleStreamChat(c *gin.Context) {
 			return
 		}
 	}
+}
+
+// verifyCaptcha 验证验证码
+func (h *RAGHandler) verifyCaptcha(req model.ChatRequest, clientIP string) error {
+	// 如果验证码服务未启用，跳过验证
+	if h.captchaService == nil || !h.captchaService.IsEnabled() {
+		logger.Info("验证码服务未启用，跳过验证")
+		return nil
+	}
+
+	// 如果请求中没有验证码信息，要求提供验证码
+	if req.CaptchaTicket == "" || req.CaptchaRandstr == "" {
+		return fmt.Errorf("请完成验证码验证")
+	}
+
+	// 验证验证码
+	isValid, err := h.captchaService.VerifyCaptcha(req.CaptchaTicket, req.CaptchaRandstr, clientIP)
+	if err != nil {
+		logger.Error("验证码验证失败: %v", err)
+		return fmt.Errorf("验证码验证失败: %v", err)
+	}
+
+	if !isValid {
+		return fmt.Errorf("验证码验证失败，请重新验证")
+	}
+
+	logger.Info("验证码验证成功")
+	return nil
 }

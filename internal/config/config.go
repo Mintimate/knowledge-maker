@@ -51,6 +51,7 @@ type Config struct {
 	Database  DatabaseConfig  `yaml:"database"`
 	Knowledge KnowledgeConfig `yaml:"knowledge"`
 	Log       LogConfig       `yaml:"log"`
+	Captcha   CaptchaConfig   `yaml:"captcha"`
 }
 
 // ServerConfig 服务器配置
@@ -71,6 +72,16 @@ type AIConfig struct {
 // RAGConfig RAG 服务配置
 type RAGConfig struct {
 	SystemPrompt string `yaml:"system_prompt"`
+}
+
+// CaptchaConfig 验证码配置
+type CaptchaConfig struct {
+	SecretID     string `yaml:"secret_id"`
+	SecretKey    string `yaml:"secret_key"`
+	CaptchaAppID uint64 `yaml:"captcha_app_id"`
+	AppSecretKey string `yaml:"app_secret_key"`
+	Endpoint     string `yaml:"endpoint"`
+	CaptchaType  uint64 `yaml:"captcha_type"`
 }
 
 // LoadConfig 加载配置
@@ -183,6 +194,30 @@ func overrideWithEnv(config *Config) {
 	if logDir := os.Getenv("LOG_DIR"); logDir != "" {
 		config.Log.Dir = logDir
 	}
+
+	// 验证码配置
+	if secretID := os.Getenv("TENCENTCLOUD_SECRET_ID"); secretID != "" {
+		config.Captcha.SecretID = secretID
+	}
+	if secretKey := os.Getenv("TENCENTCLOUD_SECRET_KEY"); secretKey != "" {
+		config.Captcha.SecretKey = secretKey
+	}
+	if captchaAppID := os.Getenv("CAPTCHA_APP_ID"); captchaAppID != "" {
+		if appID, err := strconv.ParseUint(captchaAppID, 10, 64); err == nil {
+			config.Captcha.CaptchaAppID = appID
+		}
+	}
+	if appSecretKey := os.Getenv("CAPTCHA_APP_SECRET_KEY"); appSecretKey != "" {
+		config.Captcha.AppSecretKey = appSecretKey
+	}
+	if endpoint := os.Getenv("CAPTCHA_ENDPOINT"); endpoint != "" {
+		config.Captcha.Endpoint = endpoint
+	}
+	if captchaType := os.Getenv("CAPTCHA_TYPE"); captchaType != "" {
+		if cType, err := strconv.ParseUint(captchaType, 10, 64); err == nil {
+			config.Captcha.CaptchaType = cType
+		}
+	}
 }
 
 // getEnv 获取环境变量，如果不存在则返回默认值
@@ -198,6 +233,14 @@ func setDefaults(config *Config) {
 	// 知识库默认配置
 	if config.Knowledge.TopK == 0 {
 		config.Knowledge.TopK = 3
+	}
+
+	// 验证码默认配置
+	if config.Captcha.Endpoint == "" {
+		config.Captcha.Endpoint = "captcha.tencentcloudapi.com"
+	}
+	if config.Captcha.CaptchaType == 0 {
+		config.Captcha.CaptchaType = 9 // 默认使用滑动验证码
 	}
 }
 

@@ -1,0 +1,48 @@
+# 知识库 RAG 服务配置示例
+
+server:
+  port: "8082"
+  mode: "release"  # debug, release, test
+  allow_domains:
+    - "http://localhost:3000"
+    - "https://yourdomain.com"
+
+ai:
+  base_url: "https://api.openai.com/v1"
+  api_key: "your-openai-api-key"
+  model: "gpt-3.5-turbo"
+
+rag:
+  system_prompt: "你是一个智能助手，请根据提供的知识库内容回答用户问题。"
+
+knowledge:
+  base_url: "http://localhost:8080"
+  token: "your-knowledge-base-token"
+  top_k: 3
+  vector_db:
+    type: "tcvectordb"
+    url: "http://localhost:9200"
+
+database:
+  type: "mysql"
+  host: "localhost"
+  port: 3306
+  username: "root"
+  password: "password"
+  database: "knowledge_maker"
+
+log:
+  dir: "./logs"
+  level: "info"
+  max_size: 100
+  max_backups: 3
+  max_age: 28
+
+# 腾讯云验证码配置
+captcha:
+  secret_id: "your-tencent-cloud-secret-id"
+  secret_key: "your-tencent-cloud-secret-key"
+  captcha_app_id: 66666666  # 你的验证码应用ID
+  app_secret_key: "your-captcha-app-secret-key"  # 验证码应用密钥
+  endpoint: "captcha.tencentcloudapi.com"
+  captcha_type: 9  # 验证码类型：9为滑动验证码
