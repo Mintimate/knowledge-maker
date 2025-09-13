@@ -76,12 +76,19 @@ type RAGConfig struct {
 
 // CaptchaConfig 验证码配置
 type CaptchaConfig struct {
+	// 验证码类型: "tencent" 或 "geetest"
+	Type         string `yaml:"type"`
+	// 腾讯云验证码配置
 	SecretID     string `yaml:"secret_id"`
 	SecretKey    string `yaml:"secret_key"`
 	CaptchaAppID uint64 `yaml:"captcha_app_id"`
 	AppSecretKey string `yaml:"app_secret_key"`
 	Endpoint     string `yaml:"endpoint"`
 	CaptchaType  uint64 `yaml:"captcha_type"`
+	// 极验验证码配置
+	GeetestID    string `yaml:"geetest_id"`
+	GeetestKey   string `yaml:"geetest_key"`
+	GeetestURL   string `yaml:"geetest_url"`
 }
 
 // LoadConfig 加载配置
@@ -196,6 +203,10 @@ func overrideWithEnv(config *Config) {
 	}
 
 	// 验证码配置
+	if captchaType := os.Getenv("CAPTCHA_TYPE"); captchaType != "" {
+		config.Captcha.Type = captchaType
+	}
+	// 腾讯云验证码配置
 	if secretID := os.Getenv("TENCENTCLOUD_SECRET_ID"); secretID != "" {
 		config.Captcha.SecretID = secretID
 	}
@@ -213,10 +224,20 @@ func overrideWithEnv(config *Config) {
 	if endpoint := os.Getenv("CAPTCHA_ENDPOINT"); endpoint != "" {
 		config.Captcha.Endpoint = endpoint
 	}
-	if captchaType := os.Getenv("CAPTCHA_TYPE"); captchaType != "" {
-		if cType, err := strconv.ParseUint(captchaType, 10, 64); err == nil {
+	if tencentCaptchaType := os.Getenv("TENCENT_CAPTCHA_TYPE"); tencentCaptchaType != "" {
+		if cType, err := strconv.ParseUint(tencentCaptchaType, 10, 64); err == nil {
 			config.Captcha.CaptchaType = cType
 		}
+	}
+	// 极验验证码配置
+	if geetestID := os.Getenv("GEETEST_ID"); geetestID != "" {
+		config.Captcha.GeetestID = geetestID
+	}
+	if geetestKey := os.Getenv("GEETEST_KEY"); geetestKey != "" {
+		config.Captcha.GeetestKey = geetestKey
+	}
+	if geetestURL := os.Getenv("GEETEST_URL"); geetestURL != "" {
+		config.Captcha.GeetestURL = geetestURL
 	}
 }
 
@@ -235,12 +256,16 @@ func setDefaults(config *Config) {
 		config.Knowledge.TopK = 3
 	}
 
-	// 验证码默认配置
+	// 验证码默认配置 - 如果没有设置验证类型，则不进行验证码校验
+	// 不再设置默认的验证码类型，保持为空表示不启用验证码
 	if config.Captcha.Endpoint == "" {
 		config.Captcha.Endpoint = "captcha.tencentcloudapi.com"
 	}
 	if config.Captcha.CaptchaType == 0 {
 		config.Captcha.CaptchaType = 9 // 默认使用滑动验证码
+	}
+	if config.Captcha.GeetestURL == "" {
+		config.Captcha.GeetestURL = "http://gcaptcha4.geetest.com/validate"
 	}
 }
 

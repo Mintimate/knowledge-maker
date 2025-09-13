@@ -38,11 +38,20 @@ log:
   max_backups: 3
   max_age: 28
 
-# 腾讯云验证码配置
+# 验证码配置
 captcha:
+  # 验证码类型：tencent（腾讯云）或 geetest（极验）
+  type: "tencent"
+  
+  # 腾讯云验证码配置（当 type 为 tencent 时使用）
   secret_id: "your-tencent-cloud-secret-id"
   secret_key: "your-tencent-cloud-secret-key"
   captcha_app_id: 66666666  # 你的验证码应用ID
   app_secret_key: "your-captcha-app-secret-key"  # 验证码应用密钥
   endpoint: "captcha.tencentcloudapi.com"
   captcha_type: 9  # 验证码类型：9为滑动验证码
+  
+  # 极验验证码配置（当 type 为 geetest 时使用）
+  geetest_id: "your-geetest-id"
+  geetest_key: "your-geetest-key"
+  geetest_url: "http://gcaptcha4.geetest.com/validate"  # 极验验证接口地址

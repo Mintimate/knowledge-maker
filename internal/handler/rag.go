@@ -159,15 +159,50 @@ func (h *RAGHandler) verifyCaptcha(req model.ChatRequest, clientIP string) error
 		return nil
 	}
 
-	// 如果请求中没有验证码信息，要求提供验证码
+	// 根据验证码类型进行不同的验证
+	captchaType := h.captchaService.GetCaptchaType()
+	
+	switch captchaType {
+	case "tencent":
+		return h.verifyTencentCaptcha(req, clientIP)
+	case "geetest":
+		return h.verifyGeetestCaptcha(req)
+	default:
+		return fmt.Errorf("不支持的验证码类型: %s", captchaType)
+	}
+}
+
+// verifyTencentCaptcha 验证腾讯云验证码
+func (h *RAGHandler) verifyTencentCaptcha(req model.ChatRequest, clientIP string) error {
+	// 如果请求中没有腾讯云验证码信息，要求提供验证码
 	if req.CaptchaTicket == "" || req.CaptchaRandstr == "" {
-		return fmt.Errorf("请完成验证码验证")
+		return fmt.Errorf("请完成腾讯云验证码验证")
 	}
 
 	// 验证验证码
 	isValid, err := h.captchaService.VerifyCaptcha(req.CaptchaTicket, req.CaptchaRandstr, clientIP)
 	if err != nil {
-		logger.Error("验证码验证失败: %v", err)
+		logger.Error("腾讯云验证码验证失败: %v", err)
+		return fmt.Errorf("验证码验证失败: %v", err)
+	}
+
+	if !isValid {
+		return fmt.Errorf("验证码验证失败，请重新验证")
+	}
+	return nil
+}
+
+// verifyGeetestCaptcha 验证极验验证码
+func (h *RAGHandler) verifyGeetestCaptcha(req model.ChatRequest) error {
+	// 如果请求中没有极验验证码信息，要求提供验证码
+	if req.LotNumber == "" || req.CaptchaOutput == "" || req.PassToken == "" || req.GenTime == "" {
+		return fmt.Errorf("请完成极验验证码验证")
+	}
+
+	// 验证验证码
+	isValid, err := h.captchaService.VerifyGeetestCaptcha(req.LotNumber, req.CaptchaOutput, req.PassToken, req.GenTime)
+	if err != nil {
+		logger.Error("极验验证码验证失败: %v", err)
 		return fmt.Errorf("验证码验证失败: %v", err)
 	}
 
@@ -175,6 +210,6 @@ func (h *RAGHandler) verifyCaptcha(req model.ChatRequest, clientIP string) error
 		return fmt.Errorf("验证码验证失败，请重新验证")
 	}
 
-	logger.Info("验证码验证成功")
+	logger.Info("极验验证码验证成功")
 	return nil
 }

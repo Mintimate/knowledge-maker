@@ -9,6 +9,7 @@
 - 🧠 **思考过程展示**：支持 reasoning_content 解析，展示 AI 思考过程
 - 📝 **统一日志系统**：配置化的日志管理，支持按日期分文件存储
 - 🔒 **CORS 安全配置**：支持配置化的跨域访问控制
+- 🛡️ **验证码支持**：支持腾讯云验证码和极验验证码
 - ⚙️ **灵活配置**：支持配置文件和环境变量双重配置方式
 
 ## 🚀 快速开始
@@ -80,6 +81,23 @@ rag:
 log:
   dir: "logs"          # 日志目录
   level: "info"        # 日志级别: debug, info, warn, error
+
+# 验证码配置
+captcha:
+  type: "tencent"      # 验证码类型: tencent（腾讯云）或 geetest（极验）
+  
+  # 腾讯云验证码配置（当 type 为 tencent 时使用）
+  secret_id: "your-tencent-cloud-secret-id"
+  secret_key: "your-tencent-cloud-secret-key"
+  captcha_app_id: 66666666
+  app_secret_key: "your-captcha-app-secret-key"
+  endpoint: "captcha.tencentcloudapi.com"
+  captcha_type: 9      # 验证码类型：9为滑动验证码
+  
+  # 极验验证码配置（当 type 为 geetest 时使用）
+  geetest_id: "your-geetest-id"      # 极验公钥
+  geetest_key: "your-geetest-key"    # 极验密钥
+  geetest_url: "http://gcaptcha4.geetest.com/validate"  # 极验验证接口地址
 ```
 
 ### 环境变量配置
@@ -110,6 +128,22 @@ export RAG_SYSTEM_PROMPT="你是 AI 助手..."
 
 # 日志配置
 export LOG_DIR="./logs"
+
+# 验证码配置
+export CAPTCHA_TYPE="tencent"  # 或 "geetest"
+
+# 腾讯云验证码配置
+export TENCENTCLOUD_SECRET_ID="your-secret-id"
+export TENCENTCLOUD_SECRET_KEY="your-secret-key"
+export CAPTCHA_APP_ID="66666666"
+export CAPTCHA_APP_SECRET_KEY="your-app-secret-key"
+export CAPTCHA_ENDPOINT="captcha.tencentcloudapi.com"
+export TENCENT_CAPTCHA_TYPE="9"
+
+# 极验验证码配置
+export GEETEST_ID="your-geetest-id"
+export GEETEST_KEY="your-geetest-key"
+export GEETEST_URL="http://gcaptcha4.geetest.com/validate"
 ```
 
 ## 📡 API 接口
@@ -125,7 +159,15 @@ POST /api/v1/chat
 Content-Type: application/json
 
 {
-  "query": "你的问题"
+  "query": "你的问题",
+  // 腾讯云验证码字段（可选）
+  "CaptchaTicket": "验证码票据",
+  "CaptchaRandstr": "验证码随机字符串",
+  // 极验验证码字段（可选）
+  "lot_number": "验证流水号",
+  "captcha_output": "验证输出",
+  "pass_token": "通行令牌",
+  "gen_time": "生成时间"
 }
 ```
 
@@ -135,7 +177,14 @@ POST /api/v1/chat/stream
 Content-Type: application/json
 
 {
-  "query": "你的问题"
+  "query": "你的问题",
+  // 验证码字段（根据配置的验证码类型选择相应字段）
+  "CaptchaTicket": "验证码票据",      // 腾讯云验证码
+  "CaptchaRandstr": "验证码随机字符串", // 腾讯云验证码
+  "lot_number": "验证流水号",         // 极验验证码
+  "captcha_output": "验证输出",       // 极验验证码
+  "pass_token": "通行令牌",          // 极验验证码
+  "gen_time": "生成时间"             // 极验验证码
 }
 ```
 

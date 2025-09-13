@@ -63,7 +63,6 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/captcha v1.1.0 h1:HGBwLpGQeLBz1cdWJGZgroZpGYbh2MmRWgb2F4s7UwM=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/captcha v1.1.0/go.mod h1:Cr/hgXoxK0AVna8fcgLJSW91VeDKJ9rIKewk3FfZirU=
-github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.1.0 h1:zx5QP4Y69VequB5/2umN6h9fvwg6m5m+Cel3Y3EQXc8=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.1.0/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.1.24 h1:98MvdF5Xuh11up1WrLWyh5QPW9YbX/wDbo3Jg8oPR7w=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.1.24/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
