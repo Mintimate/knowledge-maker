@@ -9,7 +9,7 @@
 - 🧠 **思考过程展示**：支持 reasoning_content 解析，展示 AI 思考过程
 - 📝 **统一日志系统**：配置化的日志管理，支持按日期分文件存储
 - 🔒 **CORS 安全配置**：支持配置化的跨域访问控制
-- 🛡️ **验证码支持**：支持腾讯云验证码和极验验证码
+- 🛡️ **验证码支持**：支持腾讯云验证码、极验验证码和 Google reCAPTCHA
 - ⚙️ **灵活配置**：支持配置文件和环境变量双重配置方式
 
 ## 🚀 快速开始
@@ -84,7 +84,7 @@ log:
 
 # 验证码配置
 captcha:
-  type: "tencent"      # 验证码类型: tencent（腾讯云）或 geetest（极验）
+  type: "tencent"      # 验证码类型: tencent（腾讯云）、geetest（极验）、google_v2（Google reCAPTCHA v2）或 google_v3（Google reCAPTCHA v3）；留空表示不启用
   
   # 腾讯云验证码配置（当 type 为 tencent 时使用）
   secret_id: "your-tencent-cloud-secret-id"
@@ -98,6 +98,11 @@ captcha:
   geetest_id: "your-geetest-id"      # 极验公钥
   geetest_key: "your-geetest-key"    # 极验密钥
   geetest_url: "http://gcaptcha4.geetest.com/validate"  # 极验验证接口地址
+  
+  # Google reCAPTCHA 配置（当 type 为 google_v2 或 google_v3 时使用）
+  google_project_id: "your-google-project-id"        # Google 项目 ID
+  google_recaptcha_key: "your-google-recaptcha-key"   # Google reCAPTCHA 密钥
+  google_min_score: 0.5                               # 最小分数阈值（仅 v3 使用，默认 0.5）
 ```
 
 ### 环境变量配置
@@ -130,7 +135,7 @@ export RAG_SYSTEM_PROMPT="你是 AI 助手..."
 export LOG_DIR="./logs"
 
 # 验证码配置
-export CAPTCHA_TYPE="tencent"  # 或 "geetest"
+export CAPTCHA_TYPE="tencent"  # 或 "geetest" 或 "google_v2" 或 "google_v3"
 
 # 腾讯云验证码配置
 export TENCENTCLOUD_SECRET_ID="your-secret-id"
@@ -144,6 +149,11 @@ export TENCENT_CAPTCHA_TYPE="9"
 export GEETEST_ID="your-geetest-id"
 export GEETEST_KEY="your-geetest-key"
 export GEETEST_URL="http://gcaptcha4.geetest.com/validate"
+
+# Google reCAPTCHA 配置
+export GOOGLE_PROJECT_ID="your-google-project-id"
+export GOOGLE_RECAPTCHA_KEY="your-google-recaptcha-key"
+export GOOGLE_MIN_SCORE="0.5"
 ```
 
 ## 📡 API 接口
@@ -167,7 +177,10 @@ Content-Type: application/json
   "lot_number": "验证流水号",
   "captcha_output": "验证输出",
   "pass_token": "通行令牌",
-  "gen_time": "生成时间"
+  "gen_time": "生成时间",
+  // Google reCAPTCHA 字段（可选）
+  "recaptcha_token": "Google reCAPTCHA 响应令牌",
+  "recaptcha_action": "reCAPTCHA 动作（可选）"
 }
 ```
 
@@ -184,7 +197,9 @@ Content-Type: application/json
   "lot_number": "验证流水号",         // 极验验证码
   "captcha_output": "验证输出",       // 极验验证码
   "pass_token": "通行令牌",          // 极验验证码
-  "gen_time": "生成时间"             // 极验验证码
+  "gen_time": "生成时间",            // 极验验证码
+  "recaptcha_token": "Google reCAPTCHA 响应令牌",    // Google reCAPTCHA
+  "recaptcha_action": "reCAPTCHA 动作（可选）"       // Google reCAPTCHA
 }
 ```
 
