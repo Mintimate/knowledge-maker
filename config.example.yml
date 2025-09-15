@@ -40,7 +40,8 @@ log:
 
 # 验证码配置
 captcha:
-  # 验证码类型：tencent（腾讯云）或 geetest（极验）
+  # 验证码类型：tencent（腾讯云）或 geetest（极验） 或 google_v2（Google reCAPTCHA v2）、google_v3（Google reCAPTCHA v3）
+  # 留空则不启用验证码
   type: "tencent"
   
   # 腾讯云验证码配置（当 type 为 tencent 时使用）
@@ -55,3 +56,8 @@ captcha:
   geetest_id: "your-geetest-id"
   geetest_key: "your-geetest-key"
   geetest_url: "http://gcaptcha4.geetest.com/validate"  # 极验验证接口地址
+
+  # Google reCAPTCHA 配置（当 type 为 google_v2 或 google_v3 时使用）
+  google_project_id: "intimate-2000"  # Google Cloud 项目 ID
+  google_recaptcha_key: "1111111111111111111"  # reCAPTCHA 密钥
+  google_min_score: 0.5  # v3 最小分数阈值 (0.0-1.0)

@@ -161,12 +161,14 @@ func (h *RAGHandler) verifyCaptcha(req model.ChatRequest, clientIP string) error
 
 	// 根据验证码类型进行不同的验证
 	captchaType := h.captchaService.GetCaptchaType()
-	
+
 	switch captchaType {
 	case "tencent":
 		return h.verifyTencentCaptcha(req, clientIP)
 	case "geetest":
 		return h.verifyGeetestCaptcha(req)
+	case "google_v2", "google_v3":
+		return h.verifyGoogleRecaptcha(req, clientIP)
 	default:
 		return fmt.Errorf("不支持的验证码类型: %s", captchaType)
 	}
@@ -211,5 +213,27 @@ func (h *RAGHandler) verifyGeetestCaptcha(req model.ChatRequest) error {
 	}
 
 	logger.Info("极验验证码验证成功")
+	return nil
+}
+
+// verifyGoogleRecaptcha 验证 Google reCAPTCHA
+func (h *RAGHandler) verifyGoogleRecaptcha(req model.ChatRequest, clientIP string) error {
+	// 如果请求中没有 Google reCAPTCHA token，要求提供验证码
+	if req.RecaptchaToken == "" {
+		return fmt.Errorf("请完成 Google reCAPTCHA 验证")
+	}
+
+	// 验证验证码
+	isValid, err := h.captchaService.VerifyGoogleRecaptcha(req.RecaptchaToken, req.RecaptchaAction, clientIP)
+	if err != nil {
+		logger.Error("Google reCAPTCHA 验证失败: %v", err)
+		return fmt.Errorf("验证码验证失败: %v", err)
+	}
+
+	if !isValid {
+		return fmt.Errorf("验证码验证失败，请重新验证")
+	}
+
+	logger.Info("Google reCAPTCHA 验证成功")
 	return nil
 }

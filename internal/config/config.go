@@ -68,7 +68,6 @@ type AIConfig struct {
 	Model   string `yaml:"model"`
 }
 
-
 // RAGConfig RAG 服务配置
 type RAGConfig struct {
 	SystemPrompt string `yaml:"system_prompt"`
@@ -76,8 +75,8 @@ type RAGConfig struct {
 
 // CaptchaConfig 验证码配置
 type CaptchaConfig struct {
-	// 验证码类型: "tencent" 或 "geetest"
-	Type         string `yaml:"type"`
+	// 验证码类型: "tencent", "geetest", "google_v2", "google_v3"
+	Type string `yaml:"type"`
 	// 腾讯云验证码配置
 	SecretID     string `yaml:"secret_id"`
 	SecretKey    string `yaml:"secret_key"`
@@ -86,9 +85,13 @@ type CaptchaConfig struct {
 	Endpoint     string `yaml:"endpoint"`
 	CaptchaType  uint64 `yaml:"captcha_type"`
 	// 极验验证码配置
-	GeetestID    string `yaml:"geetest_id"`
-	GeetestKey   string `yaml:"geetest_key"`
-	GeetestURL   string `yaml:"geetest_url"`
+	GeetestID  string `yaml:"geetest_id"`
+	GeetestKey string `yaml:"geetest_key"`
+	GeetestURL string `yaml:"geetest_url"`
+	// Google reCAPTCHA 配置
+	GoogleProjectID    string  `yaml:"google_project_id"`
+	GoogleRecaptchaKey string  `yaml:"google_recaptcha_key"`
+	GoogleMinScore     float64 `yaml:"google_min_score"`
 }
 
 // LoadConfig 加载配置
@@ -239,6 +242,18 @@ func overrideWithEnv(config *Config) {
 	if geetestURL := os.Getenv("GEETEST_URL"); geetestURL != "" {
 		config.Captcha.GeetestURL = geetestURL
 	}
+	// Google reCAPTCHA 配置
+	if googleProjectID := os.Getenv("GOOGLE_PROJECT_ID"); googleProjectID != "" {
+		config.Captcha.GoogleProjectID = googleProjectID
+	}
+	if googleRecaptchaKey := os.Getenv("GOOGLE_RECAPTCHA_KEY"); googleRecaptchaKey != "" {
+		config.Captcha.GoogleRecaptchaKey = googleRecaptchaKey
+	}
+	if googleMinScore := os.Getenv("GOOGLE_MIN_SCORE"); googleMinScore != "" {
+		if score, err := strconv.ParseFloat(googleMinScore, 64); err == nil {
+			config.Captcha.GoogleMinScore = score
+		}
+	}
 }
 
 // getEnv 获取环境变量，如果不存在则返回默认值
@@ -266,6 +281,10 @@ func setDefaults(config *Config) {
 	}
 	if config.Captcha.GeetestURL == "" {
 		config.Captcha.GeetestURL = "http://gcaptcha4.geetest.com/validate"
+	}
+	// Google reCAPTCHA 默认配置
+	if config.Captcha.GoogleMinScore == 0 {
+		config.Captcha.GoogleMinScore = 0.5 // 默认最小分数阈值
 	}
 }
 
