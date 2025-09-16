@@ -111,7 +111,7 @@ func (p *TencentCaptchaProvider) Verify(params map[string]string) (bool, error) 
 		errorMsg = fmt.Sprintf("验证码验证失败，错误码: %d", captchaCode)
 	}
 
-	return false, fmt.Errorf(errorMsg)
+	return false, fmt.Errorf("%s", errorMsg)
 }
 
 // IsEnabled 检查腾讯云验证码是否启用
