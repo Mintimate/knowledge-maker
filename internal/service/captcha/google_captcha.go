@@ -20,8 +20,12 @@ type GoogleCaptchaProvider struct {
 
 // NewGoogleCaptchaProvider 创建 Google reCAPTCHA 提供者
 func NewGoogleCaptchaProvider(cfg *config.CaptchaConfig) (*GoogleCaptchaProvider, error) {
-	if cfg.GoogleRecaptchaKey == "" {
-		return nil, fmt.Errorf("Google reCAPTCHA 验证码服务配置不完整：缺少 GoogleRecaptchaKey")
+	if cfg.GoogleRecaptchaSecretKey == "" {
+		return nil, fmt.Errorf("Google reCAPTCHA 验证码服务配置不完整：缺少 GoogleRecaptchaSecretKey")
+	}
+
+	if cfg.GoogleRecaptchaSiteKey == "" {
+		return nil, fmt.Errorf("Google reCAPTCHA 验证码服务配置不完整：缺少 GoogleRecaptchaSiteKey")
 	}
 
 	return &GoogleCaptchaProvider{
@@ -46,14 +50,14 @@ func (p *GoogleCaptchaProvider) Verify(params map[string]string) (bool, error) {
 
 	// 构建请求参数
 	formData := url.Values{}
-	formData.Set("secret", p.config.GoogleRecaptchaKey)
+	formData.Set("secret", p.config.GoogleRecaptchaSecretKey)
 	formData.Set("response", token)
 	if userIP != "" {
 		formData.Set("remoteip", userIP)
 	}
 
 	// Google reCAPTCHA 验证接口
-	verifyURL := "https://www.google.com/recaptcha/api/siteverify"
+	verifyURL := p.config.GoogleRecaptchaURL
 
 	// 创建HTTP客户端，设置10秒超时
 	client := &http.Client{
@@ -121,10 +125,15 @@ func (p *GoogleCaptchaProvider) Verify(params map[string]string) (bool, error) {
 
 // IsEnabled 检查 Google reCAPTCHA 是否启用
 func (p *GoogleCaptchaProvider) IsEnabled() bool {
-	return p.config.GoogleRecaptchaKey != ""
+	return p.config.GoogleRecaptchaSecretKey != "" && p.config.GoogleRecaptchaSiteKey != ""
 }
 
 // GetType 获取验证码类型
 func (p *GoogleCaptchaProvider) GetType() string {
 	return strings.ToLower(p.config.Type)
+}
+
+// GetSiteKey 获取 Site Key（客户端密钥）
+func (p *GoogleCaptchaProvider) GetSiteKey() string {
+	return p.config.GoogleRecaptchaSiteKey
 }

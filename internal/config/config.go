@@ -89,9 +89,10 @@ type CaptchaConfig struct {
 	GeetestKey string `yaml:"geetest_key"`
 	GeetestURL string `yaml:"geetest_url"`
 	// Google reCAPTCHA 配置
-	GoogleProjectID    string  `yaml:"google_project_id"`
-	GoogleRecaptchaKey string  `yaml:"google_recaptcha_key"`
-	GoogleMinScore     float64 `yaml:"google_min_score"`
+	GoogleRecaptchaSiteKey   string  `yaml:"google_recaptcha_site_key"`   // 客户端密钥
+	GoogleRecaptchaSecretKey string  `yaml:"google_recaptcha_secret_key"` // 服务端密钥
+	GoogleRecaptchaURL       string  `yaml:"google_recaptcha_url"`        // 验证接口 URL
+	GoogleMinScore           float64 `yaml:"google_min_score"`
 }
 
 // LoadConfig 加载配置
@@ -243,11 +244,14 @@ func overrideWithEnv(config *Config) {
 		config.Captcha.GeetestURL = geetestURL
 	}
 	// Google reCAPTCHA 配置
-	if googleProjectID := os.Getenv("GOOGLE_PROJECT_ID"); googleProjectID != "" {
-		config.Captcha.GoogleProjectID = googleProjectID
+	if googleSiteKey := os.Getenv("GOOGLE_RECAPTCHA_SITE_KEY"); googleSiteKey != "" {
+		config.Captcha.GoogleRecaptchaSiteKey = googleSiteKey
 	}
-	if googleRecaptchaKey := os.Getenv("GOOGLE_RECAPTCHA_KEY"); googleRecaptchaKey != "" {
-		config.Captcha.GoogleRecaptchaKey = googleRecaptchaKey
+	if googleSecretKey := os.Getenv("GOOGLE_RECAPTCHA_SECRET_KEY"); googleSecretKey != "" {
+		config.Captcha.GoogleRecaptchaSecretKey = googleSecretKey
+	}
+	if googleRecaptchaURL := os.Getenv("GOOGLE_RECAPTCHA_URL"); googleRecaptchaURL != "" {
+		config.Captcha.GoogleRecaptchaURL = googleRecaptchaURL
 	}
 	if googleMinScore := os.Getenv("GOOGLE_MIN_SCORE"); googleMinScore != "" {
 		if score, err := strconv.ParseFloat(googleMinScore, 64); err == nil {
@@ -283,6 +287,9 @@ func setDefaults(config *Config) {
 		config.Captcha.GeetestURL = "http://gcaptcha4.geetest.com/validate"
 	}
 	// Google reCAPTCHA 默认配置
+	if config.Captcha.GoogleRecaptchaURL == "" {
+		config.Captcha.GoogleRecaptchaURL = "https://www.recaptcha.net/recaptcha/api/siteverify"
+	}
 	if config.Captcha.GoogleMinScore == 0 {
 		config.Captcha.GoogleMinScore = 0.5 // 默认最小分数阈值
 	}

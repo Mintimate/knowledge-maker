@@ -100,9 +100,10 @@ captcha:
   geetest_url: "http://gcaptcha4.geetest.com/validate"  # 极验验证接口地址
   
   # Google reCAPTCHA 配置（当 type 为 google_v2 或 google_v3 时使用）
-  google_project_id: "your-google-project-id"        # Google 项目 ID
-  google_recaptcha_key: "your-google-recaptcha-key"   # Google reCAPTCHA 密钥
-  google_min_score: 0.5                               # 最小分数阈值（仅 v3 使用，默认 0.5）
+  google_recaptcha_site_key: "goooooooooooogleIdkey"   # 客户端密钥（Site Key）
+  google_recaptcha_secret_key: "goooooooooooogleSecretKey" # 服务端密钥（Secret Key）
+  google_recaptcha_url: "https://www.recaptcha.net/recaptcha/api/siteverify" # 验证接口 URL
+  google_min_score: 0.5                                                    # 最小分数阈值（仅 v3 使用，默认 0.5）
 ```
 
 ### 环境变量配置
@@ -151,8 +152,9 @@ export GEETEST_KEY="your-geetest-key"
 export GEETEST_URL="http://gcaptcha4.geetest.com/validate"
 
 # Google reCAPTCHA 配置
-export GOOGLE_PROJECT_ID="your-google-project-id"
-export GOOGLE_RECAPTCHA_KEY="your-google-recaptcha-key"
+export GOOGLE_RECAPTCHA_SITE_KEY="goooooooooooogleIdkey"
+export GOOGLE_RECAPTCHA_SECRET_KEY="goooooooooooogleSecretKey"
+export GOOGLE_RECAPTCHA_URL="https://www.recaptcha.net/recaptcha/api/siteverify"
 export GOOGLE_MIN_SCORE="0.5"
 ```
 

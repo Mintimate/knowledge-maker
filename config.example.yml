@@ -58,6 +58,7 @@ captcha:
   geetest_url: "http://gcaptcha4.geetest.com/validate"  # 极验验证接口地址
 
   # Google reCAPTCHA 配置（当 type 为 google_v2 或 google_v3 时使用）
-  google_project_id: "intimate-2000"  # Google Cloud 项目 ID
-  google_recaptcha_key: "1111111111111111111"  # reCAPTCHA 密钥
+  google_recaptcha_site_key: "goooooooooooogleIdkey"  # 客户端密钥（Site Key）
+  google_recaptcha_secret_key: "goooooooooooogleSecretKey"  # 服务端密钥（Secret Key）
+  google_recaptcha_url: "https://www.recaptcha.net/recaptcha/api/siteverify"  # 验证接口 URL
   google_min_score: 0.5  # v3 最小分数阈值 (0.0-1.0)
