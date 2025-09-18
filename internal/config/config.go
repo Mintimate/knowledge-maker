@@ -75,7 +75,7 @@ type RAGConfig struct {
 
 // CaptchaConfig 验证码配置
 type CaptchaConfig struct {
-	// 验证码类型: "tencent", "geetest", "google_v2", "google_v3"
+	// 验证码类型: "tencent", "geetest", "google_v2", "google_v3", "cloudflare"
 	Type string `yaml:"type"`
 	// 腾讯云验证码配置
 	SecretID     string `yaml:"secret_id"`
@@ -93,6 +93,10 @@ type CaptchaConfig struct {
 	GoogleRecaptchaSecretKey string  `yaml:"google_recaptcha_secret_key"` // 服务端密钥
 	GoogleRecaptchaURL       string  `yaml:"google_recaptcha_url"`        // 验证接口 URL
 	GoogleMinScore           float64 `yaml:"google_min_score"`
+	// Cloudflare Turnstile 配置
+	CloudflareSiteKey   string `yaml:"cloudflare_site_key"`   // 客户端密钥
+	CloudflareSecretKey string `yaml:"cloudflare_secret_key"` // 服务端密钥
+	CloudflareURL       string `yaml:"cloudflare_url"`        // 验证接口 URL
 }
 
 // LoadConfig 加载配置
@@ -258,6 +262,16 @@ func overrideWithEnv(config *Config) {
 			config.Captcha.GoogleMinScore = score
 		}
 	}
+	// Cloudflare Turnstile 配置
+	if cloudflareSiteKey := os.Getenv("CLOUDFLARE_SITE_KEY"); cloudflareSiteKey != "" {
+		config.Captcha.CloudflareSiteKey = cloudflareSiteKey
+	}
+	if cloudflareSecretKey := os.Getenv("CLOUDFLARE_SECRET_KEY"); cloudflareSecretKey != "" {
+		config.Captcha.CloudflareSecretKey = cloudflareSecretKey
+	}
+	if cloudflareURL := os.Getenv("CLOUDFLARE_URL"); cloudflareURL != "" {
+		config.Captcha.CloudflareURL = cloudflareURL
+	}
 }
 
 // getEnv 获取环境变量，如果不存在则返回默认值
@@ -292,6 +306,10 @@ func setDefaults(config *Config) {
 	}
 	if config.Captcha.GoogleMinScore == 0 {
 		config.Captcha.GoogleMinScore = 0.5 // 默认最小分数阈值
+	}
+	// Cloudflare Turnstile 默认配置
+	if config.Captcha.CloudflareURL == "" {
+		config.Captcha.CloudflareURL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 	}
 }
 

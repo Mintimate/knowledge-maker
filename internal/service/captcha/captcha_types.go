@@ -26,3 +26,13 @@ type GoogleRecaptchaResponse struct {
 	Hostname    string   `json:"hostname"`              // 验证的主机名
 	ErrorCodes  []string `json:"error-codes,omitempty"` // 错误代码
 }
+
+// CloudflareTurnstileResponse Cloudflare Turnstile 响应结构
+type CloudflareTurnstileResponse struct {
+	Success     bool     `json:"success"`
+	ChallengeTS string   `json:"challenge_ts"`          // 验证时间戳
+	Hostname    string   `json:"hostname"`              // 验证的主机名
+	ErrorCodes  []string `json:"error-codes,omitempty"` // 错误代码
+	Action      string   `json:"action,omitempty"`      // 操作类型
+	CData       string   `json:"cdata,omitempty"`       // 自定义数据
+}

@@ -9,7 +9,7 @@
 - 🧠 **思考过程展示**：支持 reasoning_content 解析，展示 AI 思考过程
 - 📝 **统一日志系统**：配置化的日志管理，支持按日期分文件存储
 - 🔒 **CORS 安全配置**：支持配置化的跨域访问控制
-- 🛡️ **验证码支持**：支持腾讯云验证码、极验验证码和 Google reCAPTCHA
+- 🛡️ **验证码支持**：支持腾讯云验证码、极验验证码、Google reCAPTCHA 和 Cloudflare Turnstile
 - ⚙️ **灵活配置**：支持配置文件和环境变量双重配置方式
 
 ## 🚀 快速开始
@@ -84,7 +84,7 @@ log:
 
 # 验证码配置
 captcha:
-  type: "tencent"      # 验证码类型: tencent（腾讯云）、geetest（极验）、google_v2（Google reCAPTCHA v2）或 google_v3（Google reCAPTCHA v3）；留空表示不启用
+  type: "tencent"      # 验证码类型: tencent（腾讯云）、geetest（极验）、google_v2（Google reCAPTCHA v2）、google_v3（Google reCAPTCHA v3）或 cloudflare（Cloudflare Turnstile）；留空表示不启用
   
   # 腾讯云验证码配置（当 type 为 tencent 时使用）
   secret_id: "your-tencent-cloud-secret-id"
@@ -104,6 +104,11 @@ captcha:
   google_recaptcha_secret_key: "goooooooooooogleSecretKey" # 服务端密钥（Secret Key）
   google_recaptcha_url: "https://www.recaptcha.net/recaptcha/api/siteverify" # 验证接口 URL
   google_min_score: 0.5                                                    # 最小分数阈值（仅 v3 使用，默认 0.5）
+  
+  # Cloudflare Turnstile 配置（当 type 为 cloudflare 时使用）
+  cloudflare_site_key: "0x4AAAAAAABkMYinukE_rfkH"     # 客户端密钥（Site Key）
+  cloudflare_secret_key: "0x4AAAAAAABkMYinukE_rfkI"   # 服务端密钥（Secret Key）
+  cloudflare_url: "https://challenges.cloudflare.com/turnstile/v0/siteverify" # 验证接口 URL
 ```
 
 ### 环境变量配置
@@ -136,7 +141,7 @@ export RAG_SYSTEM_PROMPT="你是 AI 助手..."
 export LOG_DIR="./logs"
 
 # 验证码配置
-export CAPTCHA_TYPE="tencent"  # 或 "geetest" 或 "google_v2" 或 "google_v3"
+export CAPTCHA_TYPE="tencent"  # 或 "geetest" 或 "google_v2" 或 "google_v3" 或 "cloudflare"
 
 # 腾讯云验证码配置
 export TENCENTCLOUD_SECRET_ID="your-secret-id"
@@ -156,6 +161,11 @@ export GOOGLE_RECAPTCHA_SITE_KEY="goooooooooooogleIdkey"
 export GOOGLE_RECAPTCHA_SECRET_KEY="goooooooooooogleSecretKey"
 export GOOGLE_RECAPTCHA_URL="https://www.recaptcha.net/recaptcha/api/siteverify"
 export GOOGLE_MIN_SCORE="0.5"
+
+# Cloudflare Turnstile 配置
+export CLOUDFLARE_SITE_KEY="0x4AAAAAAABkMYinukE_rfkH"
+export CLOUDFLARE_SECRET_KEY="0x4AAAAAAABkMYinukE_rfkI"
+export CLOUDFLARE_URL="https://challenges.cloudflare.com/turnstile/v0/siteverify"
 ```
 
 ## 📡 API 接口
@@ -182,7 +192,9 @@ Content-Type: application/json
   "gen_time": "生成时间",
   // Google reCAPTCHA 字段（可选）
   "recaptcha_token": "Google reCAPTCHA 响应令牌",
-  "recaptcha_action": "reCAPTCHA 动作（可选）"
+  "recaptcha_action": "reCAPTCHA 动作（可选）",
+  // Cloudflare Turnstile 字段（可选）
+  "cf_token": "Cloudflare Turnstile 响应令牌"
 }
 ```
 
@@ -201,7 +213,8 @@ Content-Type: application/json
   "pass_token": "通行令牌",          // 极验验证码
   "gen_time": "生成时间",            // 极验验证码
   "recaptcha_token": "Google reCAPTCHA 响应令牌",    // Google reCAPTCHA
-  "recaptcha_action": "reCAPTCHA 动作（可选）"       // Google reCAPTCHA
+  "recaptcha_action": "reCAPTCHA 动作（可选）",       // Google reCAPTCHA
+  "cf_token": "Cloudflare Turnstile 响应令牌"       // Cloudflare Turnstile
 }
 ```
 

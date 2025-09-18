@@ -37,6 +37,11 @@ func (s *CaptchaService) VerifyGoogleRecaptcha(token, action, userIP string) (bo
 	return s.service.VerifyGoogleRecaptcha(token, action, userIP)
 }
 
+// VerifyCloudflareTurnstile 验证 Cloudflare Turnstile 验证码
+func (s *CaptchaService) VerifyCloudflareTurnstile(token, userIP string) (bool, error) {
+	return s.service.VerifyCloudflareTurnstile(token, userIP)
+}
+
 // IsEnabled 检查验证码服务是否启用
 func (s *CaptchaService) IsEnabled() bool {
 	return s.service.IsEnabled()

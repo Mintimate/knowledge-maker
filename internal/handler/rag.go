@@ -169,6 +169,8 @@ func (h *RAGHandler) verifyCaptcha(req model.ChatRequest, clientIP string) error
 		return h.verifyGeetestCaptcha(req)
 	case "google_v2", "google_v3":
 		return h.verifyGoogleRecaptcha(req, clientIP)
+	case "cloudflare":
+		return h.verifyCloudflareTurnstile(req, clientIP)
 	default:
 		return fmt.Errorf("不支持的验证码类型: %s", captchaType)
 	}
@@ -235,5 +237,27 @@ func (h *RAGHandler) verifyGoogleRecaptcha(req model.ChatRequest, clientIP strin
 	}
 
 	logger.Info("Google reCAPTCHA 验证成功")
+	return nil
+}
+
+// verifyCloudflareTurnstile 验证 Cloudflare Turnstile 验证码
+func (h *RAGHandler) verifyCloudflareTurnstile(req model.ChatRequest, clientIP string) error {
+	// 如果请求中没有 Cloudflare Turnstile token，要求提供验证码
+	if req.CFToken == "" {
+		return fmt.Errorf("请完成 Cloudflare Turnstile 验证")
+	}
+
+	// 验证验证码
+	isValid, err := h.captchaService.VerifyCloudflareTurnstile(req.CFToken, clientIP)
+	if err != nil {
+		logger.Error("Cloudflare Turnstile 验证失败: %v", err)
+		return fmt.Errorf("验证码验证失败: %v", err)
+	}
+
+	if !isValid {
+		return fmt.Errorf("验证码验证失败，请重新验证")
+	}
+
+	logger.Info("Cloudflare Turnstile 验证成功")
 	return nil
 }

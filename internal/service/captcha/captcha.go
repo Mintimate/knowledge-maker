@@ -27,6 +27,8 @@ func NewCaptchaService(cfg *config.CaptchaConfig) (*CaptchaService, error) {
 		provider, err = NewGeetestCaptchaProvider(cfg)
 	case "google_v2", "google_v3":
 		provider, err = NewGoogleCaptchaProvider(cfg)
+	case "cloudflare":
+		provider, err = NewCloudflareCaptchaProvider(cfg)
 	default:
 		return nil, fmt.Errorf("不支持的验证码类型: %s", cfg.Type)
 	}
@@ -67,6 +69,15 @@ func (s *CaptchaService) VerifyGoogleRecaptcha(token, action, userIP string) (bo
 	params := map[string]string{
 		"token":  token,
 		"action": action,
+		"userIP": userIP,
+	}
+	return s.provider.Verify(params)
+}
+
+// VerifyCloudflareTurnstile 验证 Cloudflare Turnstile 验证码
+func (s *CaptchaService) VerifyCloudflareTurnstile(token, userIP string) (bool, error) {
+	params := map[string]string{
+		"token":  token,
 		"userIP": userIP,
 	}
 	return s.provider.Verify(params)

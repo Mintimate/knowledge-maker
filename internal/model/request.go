@@ -21,6 +21,8 @@ type ChatRequest struct {
 	// Google reCAPTCHA 字段
 	RecaptchaToken  string `json:"recaptcha_token,omitempty"`
 	RecaptchaAction string `json:"recaptcha_action,omitempty"`
+	// Cloudflare Turnstile 字段
+	CFToken string `json:"cf_token,omitempty"`
 }
 
 // KnowledgeQuery 知识库查询请求
