@@ -13,15 +13,13 @@ import (
 
 // RAGHandler RAG 处理器
 type RAGHandler struct {
-	ragService     *service.RAGService
-	captchaService *service.CaptchaService
+	ragService *service.RAGService
 }
 
 // NewRAGHandler 创建 RAG 处理器实例
-func NewRAGHandler(ragService *service.RAGService, captchaService *service.CaptchaService) *RAGHandler {
+func NewRAGHandler(ragService *service.RAGService) *RAGHandler {
 	return &RAGHandler{
-		ragService:     ragService,
-		captchaService: captchaService,
+		ragService: ragService,
 	}
 }
 
@@ -32,15 +30,6 @@ func (h *RAGHandler) HandleChat(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, model.ChatResponse{
 			Success: false,
 			Message: "请求参数错误: " + err.Error(),
-		})
-		return
-	}
-
-	// 验证码验证
-	if err := h.verifyCaptcha(req, c.ClientIP()); err != nil {
-		c.JSON(http.StatusBadRequest, model.ChatResponse{
-			Success: false,
-			Message: err.Error(),
 		})
 		return
 	}
@@ -67,15 +56,6 @@ func (h *RAGHandler) HandleStreamChat(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, model.ChatResponse{
 			Success: false,
 			Message: "请求参数错误: " + err.Error(),
-		})
-		return
-	}
-
-	// 验证码验证
-	if err := h.verifyCaptcha(req, c.ClientIP()); err != nil {
-		c.JSON(http.StatusBadRequest, model.ChatResponse{
-			Success: false,
-			Message: err.Error(),
 		})
 		return
 	}
@@ -149,115 +129,4 @@ func (h *RAGHandler) HandleStreamChat(c *gin.Context) {
 			return
 		}
 	}
-}
-
-// verifyCaptcha 验证验证码
-func (h *RAGHandler) verifyCaptcha(req model.ChatRequest, clientIP string) error {
-	// 如果验证码服务未启用，跳过验证
-	if h.captchaService == nil || !h.captchaService.IsEnabled() {
-		logger.Info("验证码服务未启用，跳过验证")
-		return nil
-	}
-
-	// 根据验证码类型进行不同的验证
-	captchaType := h.captchaService.GetCaptchaType()
-
-	switch captchaType {
-	case "tencent":
-		return h.verifyTencentCaptcha(req, clientIP)
-	case "geetest":
-		return h.verifyGeetestCaptcha(req)
-	case "google_v2", "google_v3":
-		return h.verifyGoogleRecaptcha(req, clientIP)
-	case "cloudflare":
-		return h.verifyCloudflareTurnstile(req, clientIP)
-	default:
-		return fmt.Errorf("不支持的验证码类型: %s", captchaType)
-	}
-}
-
-// verifyTencentCaptcha 验证腾讯云验证码
-func (h *RAGHandler) verifyTencentCaptcha(req model.ChatRequest, clientIP string) error {
-	// 如果请求中没有腾讯云验证码信息，要求提供验证码
-	if req.CaptchaTicket == "" || req.CaptchaRandstr == "" {
-		return fmt.Errorf("请完成腾讯云验证码验证")
-	}
-
-	// 验证验证码
-	isValid, err := h.captchaService.VerifyCaptcha(req.CaptchaTicket, req.CaptchaRandstr, clientIP)
-	if err != nil {
-		logger.Error("腾讯云验证码验证失败: %v", err)
-		return fmt.Errorf("验证码验证失败: %v", err)
-	}
-
-	if !isValid {
-		return fmt.Errorf("验证码验证失败，请重新验证")
-	}
-	return nil
-}
-
-// verifyGeetestCaptcha 验证极验验证码
-func (h *RAGHandler) verifyGeetestCaptcha(req model.ChatRequest) error {
-	// 如果请求中没有极验验证码信息，要求提供验证码
-	if req.LotNumber == "" || req.CaptchaOutput == "" || req.PassToken == "" || req.GenTime == "" {
-		return fmt.Errorf("请完成极验验证码验证")
-	}
-
-	// 验证验证码
-	isValid, err := h.captchaService.VerifyGeetestCaptcha(req.LotNumber, req.CaptchaOutput, req.PassToken, req.GenTime)
-	if err != nil {
-		logger.Error("极验验证码验证失败: %v", err)
-		return fmt.Errorf("验证码验证失败: %v", err)
-	}
-
-	if !isValid {
-		return fmt.Errorf("验证码验证失败，请重新验证")
-	}
-
-	logger.Info("极验验证码验证成功")
-	return nil
-}
-
-// verifyGoogleRecaptcha 验证 Google reCAPTCHA
-func (h *RAGHandler) verifyGoogleRecaptcha(req model.ChatRequest, clientIP string) error {
-	// 如果请求中没有 Google reCAPTCHA token，要求提供验证码
-	if req.RecaptchaToken == "" {
-		return fmt.Errorf("请完成 Google reCAPTCHA 验证")
-	}
-
-	// 验证验证码
-	isValid, err := h.captchaService.VerifyGoogleRecaptcha(req.RecaptchaToken, req.RecaptchaAction, clientIP)
-	if err != nil {
-		logger.Error("Google reCAPTCHA 验证失败: %v", err)
-		return fmt.Errorf("验证码验证失败: %v", err)
-	}
-
-	if !isValid {
-		return fmt.Errorf("验证码验证失败，请重新验证")
-	}
-
-	logger.Info("Google reCAPTCHA 验证成功")
-	return nil
-}
-
-// verifyCloudflareTurnstile 验证 Cloudflare Turnstile 验证码
-func (h *RAGHandler) verifyCloudflareTurnstile(req model.ChatRequest, clientIP string) error {
-	// 如果请求中没有 Cloudflare Turnstile token，要求提供验证码
-	if req.CFToken == "" {
-		return fmt.Errorf("请完成 Cloudflare Turnstile 验证")
-	}
-
-	// 验证验证码
-	isValid, err := h.captchaService.VerifyCloudflareTurnstile(req.CFToken, clientIP)
-	if err != nil {
-		logger.Error("Cloudflare Turnstile 验证失败: %v", err)
-		return fmt.Errorf("验证码验证失败: %v", err)
-	}
-
-	if !isValid {
-		return fmt.Errorf("验证码验证失败，请重新验证")
-	}
-
-	logger.Info("Cloudflare Turnstile 验证成功")
-	return nil
 }

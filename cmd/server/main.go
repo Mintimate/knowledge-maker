@@ -8,6 +8,7 @@ import (
 	"knowledge-maker/internal/config"
 	"knowledge-maker/internal/handler"
 	"knowledge-maker/internal/logger"
+	"knowledge-maker/internal/middleware"
 	"knowledge-maker/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -32,7 +33,7 @@ func setupCommonRoutes(r *gin.Engine) {
 func handleRoot(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"service":     "知识库 RAG 服务",
-		"version":     "v2.1.0",
+		"version":     "v3.0.0",
 		"status":      "running",
 		"description": "基于 RAG 技术的智能问答服务",
 		"endpoints": gin.H{
@@ -99,7 +100,7 @@ func main() {
 	r.Use(func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 		allowOrigin := "*"
-		
+
 		// 检查域名配置
 		if len(cfg.Server.AllowDomains) > 0 {
 			for _, domain := range cfg.Server.AllowDomains {
@@ -109,10 +110,10 @@ func main() {
 				}
 			}
 		}
-		
+
 		c.Header("Access-Control-Allow-Origin", allowOrigin)
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Captcha-Ticket, X-Captcha-Randstr, X-Geetest-Lot-Number, X-Geetest-Captcha-Output, X-Geetest-Pass-Token, X-Geetest-Gen-Time, X-Recaptcha-Token, X-Recaptcha-Action, X-Cf-Turnstile-Token")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
@@ -140,13 +141,17 @@ func main() {
 	}
 
 	// 初始化处理器
-	ragHandler := handler.NewRAGHandler(ragService, captchaService)
+	ragHandler := handler.NewRAGHandler(ragService)
+
+	// 初始化验证码中间件
+	captchaMiddleware := middleware.NewCaptchaMiddleware(captchaService)
 
 	// 注册路由
 	api := r.Group("/api/v1")
 	{
-		api.POST("/chat", ragHandler.HandleChat)
-		api.POST("/chat/stream", ragHandler.HandleStreamChat)
+		// 使用验证码中间件保护聊天接口
+		api.POST("/chat", captchaMiddleware.VerifyCaptcha(), ragHandler.HandleChat)
+		api.POST("/chat/stream", captchaMiddleware.VerifyCaptcha(), ragHandler.HandleStreamChat)
 		api.GET("/health", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
 				"status":  "ok",

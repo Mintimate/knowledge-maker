@@ -9,7 +9,7 @@
 - 🧠 **思考过程展示**：支持 reasoning_content 解析，展示 AI 思考过程
 - 📝 **统一日志系统**：配置化的日志管理，支持按日期分文件存储
 - 🔒 **CORS 安全配置**：支持配置化的跨域访问控制
-- 🛡️ **验证码支持**：支持腾讯云验证码、极验验证码、Google reCAPTCHA 和 Cloudflare Turnstile
+- 🛡️ **验证码支持**：支持腾讯云验证码、极验验证码、Google reCAPTCHA 和 Cloudflare Turnstile，采用 Header 传输方式
 - ⚙️ **灵活配置**：支持配置文件和环境变量双重配置方式
 
 ## 🚀 快速开始
@@ -179,22 +179,20 @@ GET /api/v1/health
 ```http
 POST /api/v1/chat
 Content-Type: application/json
+# 验证码信息通过 Header 传输（根据配置的验证码类型选择相应 Header）
+X-Captcha-Ticket: 验证码票据                    # 腾讯云验证码
+X-Captcha-Randstr: 验证码随机字符串              # 腾讯云验证码
+X-Geetest-Lot-Number: 验证流水号                # 极验验证码
+X-Geetest-Captcha-Output: 验证输出              # 极验验证码
+X-Geetest-Pass-Token: 通行令牌                  # 极验验证码
+X-Geetest-Gen-Time: 生成时间                    # 极验验证码
+X-Recaptcha-Token: Google reCAPTCHA 响应令牌     # Google reCAPTCHA
+X-Recaptcha-Action: reCAPTCHA 动作（可选）       # Google reCAPTCHA
+X-Cf-Turnstile-Token: Cloudflare Turnstile 响应令牌  # Cloudflare Turnstile
 
 {
-  "query": "你的问题",
-  // 腾讯云验证码字段（可选）
-  "CaptchaTicket": "验证码票据",
-  "CaptchaRandstr": "验证码随机字符串",
-  // 极验验证码字段（可选）
-  "lot_number": "验证流水号",
-  "captcha_output": "验证输出",
-  "pass_token": "通行令牌",
-  "gen_time": "生成时间",
-  // Google reCAPTCHA 字段（可选）
-  "recaptcha_token": "Google reCAPTCHA 响应令牌",
-  "recaptcha_action": "reCAPTCHA 动作（可选）",
-  // Cloudflare Turnstile 字段（可选）
-  "cf_token": "Cloudflare Turnstile 响应令牌"
+  "Query": "你的问题",
+  "History": []  // 可选的对话历史
 }
 ```
 
@@ -202,19 +200,20 @@ Content-Type: application/json
 ```http
 POST /api/v1/chat/stream
 Content-Type: application/json
+# 验证码信息通过 Header 传输（根据配置的验证码类型选择相应 Header）
+X-Captcha-Ticket: 验证码票据                    # 腾讯云验证码
+X-Captcha-Randstr: 验证码随机字符串              # 腾讯云验证码
+X-Geetest-Lot-Number: 验证流水号                # 极验验证码
+X-Geetest-Captcha-Output: 验证输出              # 极验验证码
+X-Geetest-Pass-Token: 通行令牌                  # 极验验证码
+X-Geetest-Gen-Time: 生成时间                    # 极验验证码
+X-Recaptcha-Token: Google reCAPTCHA 响应令牌     # Google reCAPTCHA
+X-Recaptcha-Action: reCAPTCHA 动作（可选）       # Google reCAPTCHA
+X-Cf-Turnstile-Token: Cloudflare Turnstile 响应令牌  # Cloudflare Turnstile
 
 {
-  "query": "你的问题",
-  // 验证码字段（根据配置的验证码类型选择相应字段）
-  "CaptchaTicket": "验证码票据",      // 腾讯云验证码
-  "CaptchaRandstr": "验证码随机字符串", // 腾讯云验证码
-  "lot_number": "验证流水号",         // 极验验证码
-  "captcha_output": "验证输出",       // 极验验证码
-  "pass_token": "通行令牌",          // 极验验证码
-  "gen_time": "生成时间",            // 极验验证码
-  "recaptcha_token": "Google reCAPTCHA 响应令牌",    // Google reCAPTCHA
-  "recaptcha_action": "reCAPTCHA 动作（可选）",       // Google reCAPTCHA
-  "cf_token": "Cloudflare Turnstile 响应令牌"       // Cloudflare Turnstile
+  "Query": "你的问题",
+  "History": []  // 可选的对话历史
 }
 ```
 
