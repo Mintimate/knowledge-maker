@@ -42,6 +42,11 @@ func (s *CaptchaService) VerifyCloudflareTurnstile(token, userIP string) (bool, 
 	return s.service.VerifyCloudflareTurnstile(token, userIP)
 }
 
+// VerifyAliyunCaptcha 验证阿里云验证码
+func (s *CaptchaService) VerifyAliyunCaptcha(captchaParam, scene, appId string) (bool, error) {
+	return s.service.VerifyAliyunCaptcha(captchaParam, scene, appId)
+}
+
 // IsEnabled 检查验证码服务是否启用
 func (s *CaptchaService) IsEnabled() bool {
 	return s.service.IsEnabled()

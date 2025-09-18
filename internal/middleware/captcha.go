@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -61,6 +62,8 @@ func (m *CaptchaMiddleware) verifyCaptcha(c *gin.Context, clientIP string) error
 		return m.verifyGoogleRecaptcha(c, clientIP)
 	case "cloudflare":
 		return m.verifyCloudflareTurnstile(c, clientIP)
+	case "aliyun":
+		return m.verifyAliyunCaptcha(c)
 	default:
 		return fmt.Errorf("不支持的验证码类型: %s", captchaType)
 	}
@@ -168,5 +171,66 @@ func (m *CaptchaMiddleware) verifyCloudflareTurnstile(c *gin.Context, clientIP s
 	}
 
 	logger.Info("Cloudflare Turnstile 验证成功")
+	return nil
+}
+
+// verifyAliyunCaptcha 验证阿里云验证码
+func (m *CaptchaMiddleware) verifyAliyunCaptcha(c *gin.Context) error {
+	// 从 Header 中获取验证码信息（兼容前端格式）
+	captchaTicket := c.GetHeader("X-Captcha-Ticket")
+	captchaRandstr := c.GetHeader("X-Captcha-Randstr")
+
+	// 如果没有标准格式，尝试阿里云专用格式
+	if captchaTicket == "" {
+		captchaTicket = c.GetHeader("X-Aliyun-Captcha-Param")
+		captchaRandstr = c.GetHeader("X-Aliyun-Scene")
+	}
+
+	// 如果请求中没有阿里云验证码信息，要求提供验证码
+	if captchaTicket == "" {
+		return fmt.Errorf("请完成阿里云验证码验证")
+	}
+
+	// 解析阿里云验证码数据
+	var captchaParam string
+	var scene string
+	var appId string
+
+	// 阿里云验证码要求CaptchaVerifyParam必须是前端传来的完整JSON字符串，不能做任何修改
+	captchaParam = captchaTicket
+
+	// 尝试从JSON中提取sceneId用于场景标识
+	if captchaTicket[0] == '{' {
+		var ticketData map[string]interface{}
+		if err := json.Unmarshal([]byte(captchaTicket), &ticketData); err == nil {
+			if sceneId, ok := ticketData["sceneId"].(string); ok {
+				scene = sceneId
+			}
+		}
+	}
+
+	// 如果没有场景ID，使用randstr或默认值
+	if scene == "" {
+		if captchaRandstr != "" && captchaRandstr != "default" {
+			scene = captchaRandstr
+		} else {
+			scene = "default"
+		}
+	}
+
+	logger.Info("阿里云验证码参数: captchaParam=%s, scene=%s", captchaParam, scene)
+
+	// 验证验证码
+	isValid, err := m.captchaService.VerifyAliyunCaptcha(captchaParam, scene, appId)
+	if err != nil {
+		logger.Error("阿里云验证码验证失败: %v", err)
+		return fmt.Errorf("验证码验证失败: %v", err)
+	}
+
+	if !isValid {
+		return fmt.Errorf("验证码验证失败，请重新验证")
+	}
+
+	logger.Info("阿里云验证码验证成功")
 	return nil
 }

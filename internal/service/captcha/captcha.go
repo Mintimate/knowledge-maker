@@ -29,6 +29,8 @@ func NewCaptchaService(cfg *config.CaptchaConfig) (*CaptchaService, error) {
 		provider, err = NewGoogleCaptchaProvider(cfg)
 	case "cloudflare":
 		provider, err = NewCloudflareCaptchaProvider(cfg)
+	case "aliyun":
+		provider, err = NewAliyunCaptchaProvider(cfg)
 	default:
 		return nil, fmt.Errorf("不支持的验证码类型: %s", cfg.Type)
 	}
@@ -79,6 +81,16 @@ func (s *CaptchaService) VerifyCloudflareTurnstile(token, userIP string) (bool, 
 	params := map[string]string{
 		"token":  token,
 		"userIP": userIP,
+	}
+	return s.provider.Verify(params)
+}
+
+// VerifyAliyunCaptcha 验证阿里云验证码
+func (s *CaptchaService) VerifyAliyunCaptcha(captchaParam, scene, appId string) (bool, error) {
+	params := map[string]string{
+		"captcha_param": captchaParam,
+		"scene":         scene,
+		"app_id":        appId,
 	}
 	return s.provider.Verify(params)
 }

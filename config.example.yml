@@ -1,19 +1,28 @@
-# 知识库 RAG 服务配置示例
+# Knowledge Maker 配置示例文件
+# 复制此文件为 config.yml 并根据实际情况修改配置
 
 server:
   port: "8082"
   mode: "release"  # debug, release, test
   allow_domains:
+    - "https://example.com"
     - "http://localhost:3000"
-    - "https://yourdomain.com"
 
 ai:
   base_url: "https://api.openai.com/v1"
   api_key: "your-openai-api-key"
-  model: "gpt-3.5-turbo"
+  model: "gpt-4"
 
 rag:
-  system_prompt: "你是一个智能助手，请根据提供的知识库内容回答用户问题。"
+  system_prompt: "你是一个专业的知识库助手，请根据提供的上下文信息回答用户问题。"
+
+database:
+  type: "sqlite"
+  host: "localhost"
+  port: 5432
+  username: "user"
+  password: "password"
+  database: "knowledge_maker"
 
 knowledge:
   base_url: "http://localhost:8080"
@@ -23,14 +32,6 @@ knowledge:
     type: "tcvectordb"
     url: "http://localhost:9200"
 
-database:
-  type: "mysql"
-  host: "localhost"
-  port: 3306
-  username: "root"
-  password: "password"
-  database: "knowledge_maker"
-
 log:
   dir: "./logs"
   level: "info"
@@ -38,32 +39,37 @@ log:
   max_backups: 3
   max_age: 28
 
-# 验证码配置
+# 验证码配置 - 支持多种验证码类型
 captcha:
-  # 验证码类型：tencent（腾讯云）或 geetest（极验） 或 google_v2（Google reCAPTCHA v2）、google_v3（Google reCAPTCHA v3）或 cloudflare（Cloudflare Turnstile）
-  # 留空则不启用验证码
+  # 验证码类型: "tencent", "geetest", "google_v2", "google_v3", "cloudflare", "aliyun"
   type: "tencent"
   
-  # 腾讯云验证码配置（当 type 为 tencent 时使用）
-  secret_id: "your-tencent-cloud-secret-id"
-  secret_key: "your-tencent-cloud-secret-key"
-  captcha_app_id: 66666666  # 你的验证码应用ID
-  app_secret_key: "your-captcha-app-secret-key"  # 验证码应用密钥
+  # 腾讯云验证码配置
+  secret_id: "your-tencent-secret-id"
+  secret_key: "your-tencent-secret-key"
+  captcha_app_id: 123456789
+  app_secret_key: "your-app-secret-key"
   endpoint: "captcha.tencentcloudapi.com"
-  captcha_type: 9  # 验证码类型：9为滑动验证码
+  captcha_type: 9
   
-  # 极验验证码配置（当 type 为 geetest 时使用）
+  # 极验验证码配置
   geetest_id: "your-geetest-id"
   geetest_key: "your-geetest-key"
-  geetest_url: "http://gcaptcha4.geetest.com/validate"  # 极验验证接口地址
-
-  # Google reCAPTCHA 配置（当 type 为 google_v2 或 google_v3 时使用）
-  google_recaptcha_site_key: "goooooooooooogleIdkey"  # 客户端密钥（Site Key）
-  google_recaptcha_secret_key: "goooooooooooogleSecretKey"  # 服务端密钥（Secret Key）
-  google_recaptcha_url: "https://www.recaptcha.net/recaptcha/api/siteverify"  # 验证接口 URL
-  google_min_score: 0.5  # v3 最小分数阈值 (0.0-1.0)
-
-  # Cloudflare Turnstile 配置（当 type 为 cloudflare 时使用）
-  cloudflare_site_key: "0xAAAAAAAAAAAAAAAAAAA"  # 客户端密钥（Site Key）
-  cloudflare_secret_key: "0xAAAAAAAAAAAAAAAAAAA"  # 服务端密钥（Secret Key）
-  cloudflare_url: "https://challenges.cloudflare.com/turnstile/v0/siteverify"  # 验证接口 URL
+  geetest_url: "http://gcaptcha4.geetest.com/validate"
+  
+  # Google reCAPTCHA 配置
+  google_recaptcha_site_key: "your-google-site-key"
+  google_recaptcha_secret_key: "your-google-secret-key"
+  google_recaptcha_url: "https://www.recaptcha.net/recaptcha/api/siteverify"
+  google_min_score: 0.5
+  
+  # Cloudflare Turnstile 配置
+  cloudflare_site_key: "your-cloudflare-site-key"
+  cloudflare_secret_key: "your-cloudflare-secret-key"
+  cloudflare_url: "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+  
+  # 阿里云验证码配置
+  aliyun_access_key_id: "your-aliyun-access-key-id"
+  aliyun_access_key_secret: "your-aliyun-access-key-secret"
+  aliyun_captcha_app_id: "your-aliyun-captcha-app-id"
+  aliyun_endpoint: "captcha-dualstack.cn-shanghai.aliyuncs.com"

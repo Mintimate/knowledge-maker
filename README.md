@@ -9,7 +9,7 @@
 - 🧠 **思考过程展示**：支持 reasoning_content 解析，展示 AI 思考过程
 - 📝 **统一日志系统**：配置化的日志管理，支持按日期分文件存储
 - 🔒 **CORS 安全配置**：支持配置化的跨域访问控制
-- 🛡️ **验证码支持**：支持腾讯云验证码、极验验证码、Google reCAPTCHA 和 Cloudflare Turnstile，采用 Header 传输方式
+- 🛡️ **验证码支持**：支持腾讯云验证码、极验验证码、Google reCAPTCHA、Cloudflare Turnstile 和阿里云验证码，采用 Header 传输方式
 - ⚙️ **灵活配置**：支持配置文件和环境变量双重配置方式
 
 ## 🚀 快速开始
@@ -84,7 +84,7 @@ log:
 
 # 验证码配置
 captcha:
-  type: "tencent"      # 验证码类型: tencent（腾讯云）、geetest（极验）、google_v2（Google reCAPTCHA v2）、google_v3（Google reCAPTCHA v3）或 cloudflare（Cloudflare Turnstile）；留空表示不启用
+  type: "tencent"      # 验证码类型: tencent（腾讯云）、geetest（极验）、google_v2（Google reCAPTCHA v2）、google_v3（Google reCAPTCHA v3）、cloudflare（Cloudflare Turnstile）或 aliyun（阿里云）；留空表示不启用
   
   # 腾讯云验证码配置（当 type 为 tencent 时使用）
   secret_id: "your-tencent-cloud-secret-id"
@@ -109,6 +109,12 @@ captcha:
   cloudflare_site_key: "0x4AAAAAAABkMYinukE_rfkH"     # 客户端密钥（Site Key）
   cloudflare_secret_key: "0x4AAAAAAABkMYinukE_rfkI"   # 服务端密钥（Secret Key）
   cloudflare_url: "https://challenges.cloudflare.com/turnstile/v0/siteverify" # 验证接口 URL
+  
+  # 阿里云验证码配置（当 type 为 aliyun 时使用）
+  aliyun_access_key_id: "your-aliyun-access-key-id"       # 阿里云访问密钥 ID
+  aliyun_access_key_secret: "your-aliyun-access-key-secret" # 阿里云访问密钥 Secret
+  aliyun_captcha_app_id: "your-aliyun-captcha-app-id"     # 阿里云验证码应用 ID
+  aliyun_endpoint: "captcha-dualstack.cn-shanghai.aliyuncs.com" # 阿里云验证码服务端点
 ```
 
 ### 环境变量配置
@@ -141,7 +147,7 @@ export RAG_SYSTEM_PROMPT="你是 AI 助手..."
 export LOG_DIR="./logs"
 
 # 验证码配置
-export CAPTCHA_TYPE="tencent"  # 或 "geetest" 或 "google_v2" 或 "google_v3" 或 "cloudflare"
+export CAPTCHA_TYPE="tencent"  # 或 "geetest" 或 "google_v2" 或 "google_v3" 或 "cloudflare" 或 "aliyun"
 
 # 腾讯云验证码配置
 export TENCENTCLOUD_SECRET_ID="your-secret-id"
@@ -166,6 +172,12 @@ export GOOGLE_MIN_SCORE="0.5"
 export CLOUDFLARE_SITE_KEY="0x4AAAAAAABkMYinukE_rfkH"
 export CLOUDFLARE_SECRET_KEY="0x4AAAAAAABkMYinukE_rfkI"
 export CLOUDFLARE_URL="https://challenges.cloudflare.com/turnstile/v0/siteverify"
+
+# 阿里云验证码配置
+export ALIYUN_ACCESS_KEY_ID="your-aliyun-access-key-id"
+export ALIYUN_ACCESS_KEY_SECRET="your-aliyun-access-key-secret"
+export ALIYUN_CAPTCHA_APP_ID="your-aliyun-captcha-app-id"
+export ALIYUN_ENDPOINT="captcha-dualstack.cn-shanghai.aliyuncs.com"
 ```
 
 ## 📡 API 接口
@@ -189,6 +201,7 @@ X-Geetest-Gen-Time: 生成时间                    # 极验验证码
 X-Recaptcha-Token: Google reCAPTCHA 响应令牌     # Google reCAPTCHA
 X-Recaptcha-Action: reCAPTCHA 动作（可选）       # Google reCAPTCHA
 X-Cf-Turnstile-Token: Cloudflare Turnstile 响应令牌  # Cloudflare Turnstile
+X-Aliyun-Captcha-Token: 阿里云验证码响应令牌      # 阿里云验证码
 
 {
   "Query": "你的问题",
@@ -210,6 +223,7 @@ X-Geetest-Gen-Time: 生成时间                    # 极验验证码
 X-Recaptcha-Token: Google reCAPTCHA 响应令牌     # Google reCAPTCHA
 X-Recaptcha-Action: reCAPTCHA 动作（可选）       # Google reCAPTCHA
 X-Cf-Turnstile-Token: Cloudflare Turnstile 响应令牌  # Cloudflare Turnstile
+X-Aliyun-Captcha-Token: 阿里云验证码响应令牌      # 阿里云验证码
 
 {
   "Query": "你的问题",

@@ -75,7 +75,7 @@ type RAGConfig struct {
 
 // CaptchaConfig 验证码配置
 type CaptchaConfig struct {
-	// 验证码类型: "tencent", "geetest", "google_v2", "google_v3", "cloudflare"
+	// 验证码类型: "tencent", "geetest", "google_v2", "google_v3", "cloudflare", "aliyun"
 	Type string `yaml:"type"`
 	// 腾讯云验证码配置
 	SecretID     string `yaml:"secret_id"`
@@ -97,6 +97,11 @@ type CaptchaConfig struct {
 	CloudflareSiteKey   string `yaml:"cloudflare_site_key"`   // 客户端密钥
 	CloudflareSecretKey string `yaml:"cloudflare_secret_key"` // 服务端密钥
 	CloudflareURL       string `yaml:"cloudflare_url"`        // 验证接口 URL
+	// 阿里云验证码配置
+	AliyunAccessKeyID     string `yaml:"aliyun_access_key_id"`     // 阿里云 AccessKey ID
+	AliyunAccessKeySecret string `yaml:"aliyun_access_key_secret"` // 阿里云 AccessKey Secret
+	AliyunCaptchaAppID    string `yaml:"aliyun_captcha_app_id"`    // 阿里云验证码应用ID
+	AliyunEndpoint        string `yaml:"aliyun_endpoint"`          // 阿里云服务端点
 }
 
 // LoadConfig 加载配置
@@ -271,6 +276,19 @@ func overrideWithEnv(config *Config) {
 	}
 	if cloudflareURL := os.Getenv("CLOUDFLARE_URL"); cloudflareURL != "" {
 		config.Captcha.CloudflareURL = cloudflareURL
+	}
+	// 阿里云验证码配置
+	if aliyunAccessKeyID := os.Getenv("ALIYUN_ACCESS_KEY_ID"); aliyunAccessKeyID != "" {
+		config.Captcha.AliyunAccessKeyID = aliyunAccessKeyID
+	}
+	if aliyunAccessKeySecret := os.Getenv("ALIYUN_ACCESS_KEY_SECRET"); aliyunAccessKeySecret != "" {
+		config.Captcha.AliyunAccessKeySecret = aliyunAccessKeySecret
+	}
+	if aliyunCaptchaAppID := os.Getenv("ALIYUN_CAPTCHA_APP_ID"); aliyunCaptchaAppID != "" {
+		config.Captcha.AliyunCaptchaAppID = aliyunCaptchaAppID
+	}
+	if aliyunEndpoint := os.Getenv("ALIYUN_ENDPOINT"); aliyunEndpoint != "" {
+		config.Captcha.AliyunEndpoint = aliyunEndpoint
 	}
 }
 
