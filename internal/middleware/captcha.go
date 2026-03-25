@@ -1,9 +1,15 @@
 package middleware
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"knowledge-maker/internal/logger"
 	"knowledge-maker/internal/model"
@@ -11,6 +17,21 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// sessionTokenSecret 用于签名 session token 的密钥（运行时随机生成更安全，这里使用固定密钥简化实现）
+// 每次服务重启后旧 token 自动失效
+var sessionTokenSecret = generateSessionSecret()
+
+// sessionTokenExpiry session token 有效期（5 分钟，足够完成一轮 MCP Function Calling 交互）
+const sessionTokenExpiry = 5 * time.Minute
+
+// generateSessionSecret 生成 session token 签名密钥
+func generateSessionSecret() string {
+	// 使用启动时间作为种子，确保每次重启后密钥不同
+	h := hmac.New(sha256.New, []byte("knowledge-maker-captcha-session"))
+	h.Write([]byte(time.Now().String()))
+	return hex.EncodeToString(h.Sum(nil))
+}
 
 // CaptchaMiddleware 验证码中间件
 type CaptchaMiddleware struct {
@@ -34,6 +55,18 @@ func (m *CaptchaMiddleware) VerifyCaptcha() gin.HandlerFunc {
 			return
 		}
 
+		// 优先检查 session token（用于 MCP 多轮调用场景，避免验证码重复弹出）
+		sessionToken := c.GetHeader("X-Session-Token")
+		if sessionToken != "" {
+			if m.verifySessionToken(sessionToken, c.ClientIP()) {
+				logger.Info("Session token 验证通过，跳过验证码验证")
+				c.Next()
+				return
+			}
+			// session token 无效，继续走验证码验证流程
+			logger.Info("Session token 无效或已过期，继续验证码验证")
+		}
+
 		// 验证验证码
 		if err := m.verifyCaptcha(c, c.ClientIP()); err != nil {
 			c.JSON(http.StatusBadRequest, model.ChatResponse{
@@ -44,8 +77,68 @@ func (m *CaptchaMiddleware) VerifyCaptcha() gin.HandlerFunc {
 			return
 		}
 
+		// 验证码通过后，生成 session token 返回给前端
+		// 前端后续请求（如 MCP Function Calling 多轮调用）可携带此 token 跳过验证码
+		token := m.generateSessionToken(c.ClientIP())
+		c.Header("X-Session-Token", token)
+
 		c.Next()
 	}
+}
+
+// generateSessionToken 生成带签名的 session token
+// 格式: {clientIP}|{expireTimestamp}|{signature}
+func (m *CaptchaMiddleware) generateSessionToken(clientIP string) string {
+	expireAt := time.Now().Add(sessionTokenExpiry).Unix()
+	payload := fmt.Sprintf("%s|%d", clientIP, expireAt)
+
+	// 使用 HMAC-SHA256 签名
+	h := hmac.New(sha256.New, []byte(sessionTokenSecret))
+	h.Write([]byte(payload))
+	signature := hex.EncodeToString(h.Sum(nil))
+
+	return fmt.Sprintf("%s|%s", payload, signature)
+}
+
+// verifySessionToken 验证 session token 的有效性
+func (m *CaptchaMiddleware) verifySessionToken(token string, clientIP string) bool {
+	parts := strings.SplitN(token, "|", 3)
+	if len(parts) != 3 {
+		return false
+	}
+
+	tokenIP := parts[0]
+	expireStr := parts[1]
+	signature := parts[2]
+
+	// 验证 IP 是否匹配
+	if tokenIP != clientIP {
+		logger.Warn("Session token IP 不匹配: token=%s, client=%s", tokenIP, clientIP)
+		return false
+	}
+
+	// 验证是否过期
+	expireAt, err := strconv.ParseInt(expireStr, 10, 64)
+	if err != nil {
+		return false
+	}
+	if time.Now().Unix() > expireAt {
+		logger.Info("Session token 已过期")
+		return false
+	}
+
+	// 验证签名
+	payload := fmt.Sprintf("%s|%s", tokenIP, expireStr)
+	h := hmac.New(sha256.New, []byte(sessionTokenSecret))
+	h.Write([]byte(payload))
+	expectedSig := hex.EncodeToString(h.Sum(nil))
+
+	if !hmac.Equal([]byte(signature), []byte(expectedSig)) {
+		logger.Warn("Session token 签名验证失败")
+		return false
+	}
+
+	return true
 }
 
 // verifyCaptcha 验证验证码

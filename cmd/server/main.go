@@ -113,7 +113,8 @@ func main() {
 
 		c.Header("Access-Control-Allow-Origin", allowOrigin)
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Captcha-Ticket, X-Captcha-Randstr, X-Geetest-Lot-Number, X-Geetest-Captcha-Output, X-Geetest-Pass-Token, X-Geetest-Gen-Time, X-Recaptcha-Token, X-Recaptcha-Action, X-Cf-Turnstile-Token")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Captcha-Ticket, X-Captcha-Randstr, X-Geetest-Lot-Number, X-Geetest-Captcha-Output, X-Geetest-Pass-Token, X-Geetest-Gen-Time, X-Recaptcha-Token, X-Recaptcha-Action, X-Cf-Turnstile-Token, X-Session-Token")
+		c.Header("Access-Control-Expose-Headers", "X-Session-Token")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
@@ -140,6 +141,10 @@ func main() {
 		logger.Info("验证码服务初始化成功")
 	}
 
+	// 初始化 MCP 服务和处理器
+	mcpService := service.NewMCPService(knowledgeService, aiService, cfg)
+	mcpHandler := handler.NewMCPHandler(mcpService)
+
 	// 初始化处理器
 	ragHandler := handler.NewRAGHandler(ragService)
 
@@ -158,6 +163,18 @@ func main() {
 				"message": "知识库 RAG 服务运行正常",
 			})
 		})
+
+		// MCP 接口（Tool Use / Function Calling）
+		mcp := api.Group("/mcp")
+		{
+			// 获取工具列表 - 不需要鉴权
+			mcp.GET("/tools", mcpHandler.HandleListTools)
+			// 工具调用 - 不单独加验证码，避免与 llm/chat 流程中重复弹出验证码
+			// （tools/call 通常是 llm/chat 触发 function calling 后的中间调用步骤）
+			mcp.POST("/tools/call", mcpHandler.HandleCallTool)
+			// LLM 聊天 - 需要验证码鉴权（作为 MCP 流程的入口鉴权点）
+			mcp.POST("/llm/chat", captchaMiddleware.VerifyCaptcha(), mcpHandler.HandleLLMChat)
+		}
 	}
 
 	// 启动服务器
